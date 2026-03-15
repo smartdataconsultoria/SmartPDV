@@ -710,6 +710,7 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
         </div>
         <div class="field" style="margin-top:8px"><label>Preço sugerido p/ venda (R$)</label><input type="text" id="np-preco" placeholder="0,00" inputmode="decimal"></div>
         <button class="btn btn-p" style="margin-top:4px;font-size:13px" onclick="addProduto()">+ Adicionar produto</button>
+        <button class="btn btn-o" style="margin-top:8px;font-size:12px" onclick="sincronizarProdutos()">↻ Sincronizar com banco</button>
       </div>
       <div id="lista-produtos-cfg"></div>
     </div>
@@ -1492,33 +1493,60 @@ function addProduto() {
   document.getElementById('np-preco').value='';
   renderCadastroProdutos();
   recarregarProdutos();
-  // Salvar também no Supabase para que o estoque funcione
-  sbPost('produtos', {
-    id: novoProduto.id,
-    nome: novoProduto.nome,
-    sku: novoProduto.sku,
-    minimo: novoProduto.minimo,
-    preco_sugerido: novoProduto.preco_sugerido
-  }).then(function(r) {
-    if (r && r.ok) {
-      alert('✓ Produto cadastrado e salvo no banco!');
-    } else {
-      alert('✓ Produto cadastrado localmente!\n\nSe quiser salvar no banco, configure o Supabase em Config.');
-    }
-  }).catch(function() {
-    alert('✓ Produto cadastrado!');
-  });
+  // Salvar no Supabase com UPSERT — se SKU já existe, atualiza
+  var sbUrl = ls('sb-url');
+  var sbKey = ls('sb-key');
+  if (sbUrl && sbKey) {
+    fetch(sbUrl + '/rest/v1/produtos', {
+      method: 'POST',
+      headers: {
+        'apikey': sbKey,
+        'Authorization': 'Bearer ' + sbKey,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({
+        id: novoProduto.id,
+        nome: novoProduto.nome,
+        sku: novoProduto.sku,
+        minimo: novoProduto.minimo,
+        preco_sugerido: novoProduto.preco_sugerido
+      })
+    }).then(function(r) {
+      alert(r.ok ? '✓ Produto salvo no banco!' : '✓ Produto cadastrado localmente.');
+    }).catch(function() {
+      alert('✓ Produto cadastrado!');
+    });
+  } else {
+    alert('✓ Produto cadastrado localmente!\n\nConfigure o Supabase em ⚙️ Config para salvar no banco.');
+  }
 }
 
 function removeProduto(id) {
-  var lista = carregarProdutos().filter(function(p){ return p.id!==id; });
+  var todos = carregarProdutos();
+  var produto = todos.find(function(p){ return p.id===id; });
+  var lista = todos.filter(function(p){ return p.id!==id; });
   localStorage.setItem('cadastro-produtos', JSON.stringify(lista));
-  // Remover também similares ligados
   var concs = carregarConcorrentes().filter(function(c){ return c.produto_id!==id; });
   localStorage.setItem('cadastro-concorrentes', JSON.stringify(concs));
   renderCadastroProdutos();
   renderCadastroConcorrentes();
   recarregarProdutos();
+  // Remover do Supabase pelo SKU (chave única)
+  var sbUrl = ls('sb-url');
+  var sbKey = ls('sb-key');
+  if (sbUrl && sbKey && produto) {
+    fetch(sbUrl + '/rest/v1/produtos?sku=eq.' + encodeURIComponent(produto.sku), {
+      method: 'DELETE',
+      headers: {
+        'apikey': sbKey,
+        'Authorization': 'Bearer ' + sbKey,
+        'Content-Type': 'application/json'
+      }
+    }).then(function(r) {
+      if (!r.ok) console.error('Erro ao remover produto do banco');
+    }).catch(function(e){ console.error(e); });
+  }
 }
 
 function renderCadastroProdutos() {
@@ -1578,10 +1606,22 @@ function addConcorrente() {
 }
 
 function removeConcorrente(id) {
-  var lista = carregarConcorrentes().filter(function(c){ return c.id!==id; });
+  var lista = carregarConcorrentes().filter(function(c){ return c.id !== id; });
   localStorage.setItem('cadastro-concorrentes', JSON.stringify(lista));
   renderCadastroConcorrentes();
   recarregarProdutos();
+  var sbUrl = ls('sb-url');
+  var sbKey = ls('sb-key');
+  if (sbUrl && sbKey) {
+    fetch(sbUrl + '/rest/v1/concorrentes?id=eq.' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: {
+        'apikey': sbKey,
+        'Authorization': 'Bearer ' + sbKey,
+        'Content-Type': 'application/json'
+      }
+    }).catch(function(e){ console.error('Erro ao deletar concorrente:', e); });
+  }
 }
 
 function renderCadastroConcorrentes() {
@@ -1604,6 +1644,43 @@ function renderCadastroConcorrentes() {
       '<button data-id="'+c.id+'" onclick="removeConcorrente(this.dataset.id)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Remover</button>' +
     '</div>';
   }).join('');
+}
+
+function sincronizarProdutos() {
+  var sbUrl = ls('sb-url');
+  var sbKey = ls('sb-key');
+  if (!sbUrl || !sbKey) {
+    alert('Configure o Supabase em Config primeiro.');
+    return;
+  }
+  var lista = carregarProdutos();
+  if (!lista.length) { alert('Nenhum produto cadastrado localmente.'); return; }
+
+  // Primeiro apaga todos os produtos do banco com os SKUs locais
+  // Depois insere todos de novo sem duplicata
+  var skus = lista.map(function(p){ return p.sku; }).join(',');
+  fetch(sbUrl + '/rest/v1/produtos?sku=in.(' + encodeURIComponent(skus) + ')', {
+    method: 'DELETE',
+    headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
+  }).then(function() {
+    // Reinsere todos sem duplicata
+    return fetch(sbUrl + '/rest/v1/produtos', {
+      method: 'POST',
+      headers: {
+        'apikey': sbKey,
+        'Authorization': 'Bearer ' + sbKey,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify(lista.map(function(p){
+        return { id: p.id, nome: p.nome, sku: p.sku, minimo: p.minimo, preco_sugerido: p.preco_sugerido };
+      }))
+    });
+  }).then(function(r) {
+    alert(r.ok
+      ? '✓ Banco sincronizado! ' + lista.length + ' produto(s) sem duplicatas.'
+      : '✕ Erro na sincronização.');
+  }).catch(function(e){ alert('Erro: ' + e); });
 }
 
 function recarregarProdutos() {
