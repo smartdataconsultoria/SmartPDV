@@ -1330,33 +1330,138 @@ function atualizarHomeConc() {
 }
 
 // ─── SALVAR ───────────────────────────────────────────────────────────────────
-function salvarEstoque() {
-  var sbUrl = ls('sb-url'); var sbKey = ls('sb-key');
-  var payload = {
-    promotor: ls('promotor-nome')||'',
-    loja: ls('promotor-loja')||'',
-    data_visita: new Date().toISOString()
-  };
-  produtos.forEach(function(p){
-    payload['sis_'+p.id] = estSistema[p.id]||null;
-    payload['gon_'+p.id] = estGondola[p.id]||null;
-    payload['preco_'+p.id] = precoProp[p.id]||null;
+// ─── HELPER SUPABASE ─────────────────────────────────────────────────────────
+function sbPost(tabela, payload) {
+  var sbUrl = ls('sb-url');
+  var sbKey = ls('sb-key');
+  if (!sbUrl || !sbKey) return Promise.resolve({ok:false});
+  return fetch(sbUrl + '/rest/v1/' + tabela, {
+    method: 'POST',
+    headers: {
+      'apikey': sbKey,
+      'Authorization': 'Bearer ' + sbKey,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(payload)
   });
-  if(sbUrl&&sbKey){
-    fetch(sbUrl+'/rest/v1/visitas',{method:'POST',headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(payload)})
-    .then(function(r){alert(r.ok?'✓ Salvo no banco de dados!':'✓ Salvo localmente (verifique Supabase).');})
-    .catch(function(){alert('✓ Salvo localmente.');});
+}
+
+function sbConfig() {
+  return {
+    url: ls('sb-url'), key: ls('sb-key'),
+    promotor: ls('promotor-nome')||'Promotor',
+    loja: ls('promotor-loja')||'Loja'
+  };
+}
+
+// ─── SALVAR ESTOQUE ───────────────────────────────────────────────────────────
+function salvarEstoque() {
+  var cfg = sbConfig();
+  var registros = [];
+  produtos.forEach(function(p) {
+    var gon = estGondola[p.id] !== undefined ? estGondola[p.id] : null;
+    var sis = estSistema[p.id] !== undefined ? estSistema[p.id] : null;
+    var preco = precoProp[p.id] ? parseFloat(precoProp[p.id].replace(',','.')) : null;
+    if (gon === null && sis === null && preco === null) return;
+    registros.push({
+      promotor: cfg.promotor, loja: cfg.loja,
+      produto_id: p.id, produto_nome: p.nome, sku: p.sku,
+      qtd_sistema: sis, qtd_gondola: gon,
+      preco_encontrado: preco, preco_sugerido: p.preco_sugerido
+    });
+  });
+  if (!registros.length) {
+    alert('Preencha pelo menos um campo antes de salvar.');
+    return;
+  }
+  if (!cfg.url || !cfg.key) {
+    alert('✓ Salvo localmente!\n\nConfigure o Supabase em ⚙️ Config para enviar ao banco.');
+    atualizarHome(); return;
+  }
+  sbPost('estoque', registros)
+    .then(function(r) {
+      if (r.ok) { alert('✓ Estoque salvo no banco de dados!'); }
+      else { r.text().then(function(t){ console.error(t); alert('Erro: ' + t.slice(0,120)); }); }
+    })
+    .catch(function(e){ alert('Erro de conexão: ' + e); });
+  atualizarHome();
+}
+
+// ─── SALVAR EXPOSIÇÃO ─────────────────────────────────────────────────────────
+function salvarExposicao() {
+  var cfg = sbConfig();
+  var cbs = document.querySelectorAll('#sc-exposicao .cb');
+  var payload = {
+    promotor: cfg.promotor, loja: cfg.loja,
+    ponto_natural:          cbs[0] ? cbs[0].classList.contains('on') : false,
+    preco_fisico_ok:        cbs[1] ? cbs[1].classList.contains('on') : false,
+    precificacao_visivel:   cbs[2] ? cbs[2].classList.contains('on') : false,
+    area_extra_promocao:    cbs[3] ? cbs[3].classList.contains('on') : false,
+    material_merchandising: cbs[4] ? cbs[4].classList.contains('on') : false,
+    cross_merchandising:    cbs[5] ? cbs[5].classList.contains('on') : false,
+    produtos_sem_avaria:    cbs[6] ? cbs[6].classList.contains('on') : false,
+    planograma_ok:          cbs[7] ? cbs[7].classList.contains('on') : false,
+    observacoes: document.getElementById('obs-exp') ? document.getElementById('obs-exp').value : ''
+  };
+  if (cfg.url && cfg.key) {
+    sbPost('exposicao', payload)
+      .then(function(r){ alert(r.ok ? '✓ Exposição salva no banco! ' + expoChecks + '/' + expoTotal + ' itens.' : '✓ Salvo localmente.'); })
+      .catch(function(){ alert('✓ Salvo localmente.'); });
   } else {
-    alert('✓ Estoque e preços registrados!\n\nDica: configure o Supabase em ⚙️ Config para enviar ao banco.');
+    alert('✓ Exposição salva! ' + expoChecks + '/' + expoTotal + ' itens.\n\nConfigure Supabase em ⚙️ Config.');
   }
   atualizarHome();
 }
-function salvarExposicao(){alert('✓ Exposição salva! '+expoChecks+'/'+expoTotal+' itens conformes.');atualizarHome();}
-function salvarConcorrentes(){alert('✓ Preços dos concorrentes registrados!');atualizarHomeConc();}
-function salvarDesempenho(){
-  lss('fat-real',document.getElementById('fat-real-input').value);
-  lss('fat-meta',document.getElementById('fat-meta-input').value);
-  alert('✓ Desempenho salvo!');
+
+// ─── SALVAR CONCORRENTES ──────────────────────────────────────────────────────
+function salvarConcorrentes() {
+  var cfg = sbConfig();
+  var registros = [];
+  produtos.forEach(function(p) {
+    var conc = precoConc[p.id];
+    if (!conc) return;
+    var meu = precoProp[p.id] ? parseFloat(precoProp[p.id].replace(',','.')) : null;
+    registros.push({
+      promotor: cfg.promotor, loja: cfg.loja,
+      produto_id: p.id, produto_nome: p.nome,
+      meu_preco: meu,
+      preco_concorrente: parseFloat(conc.replace(',','.')),
+      empresa_concorrente: p.concorrente ? p.concorrente.empresa : '',
+      produto_similar: p.concorrente ? p.concorrente.nome : ''
+    });
+  });
+  if (!registros.length) { alert('Preencha pelo menos um preço de concorrente.'); return; }
+  if (cfg.url && cfg.key) {
+    sbPost('precos_concorrentes', registros)
+      .then(function(r){ alert(r.ok ? '✓ Concorrentes salvos no banco!' : '✓ Salvo localmente.'); })
+      .catch(function(){ alert('✓ Salvo localmente.'); });
+  } else {
+    alert('✓ Preços registrados!\n\nConfigure o Supabase em ⚙️ Config.');
+  }
+  atualizarHomeConc();
+}
+
+// ─── SALVAR DESEMPENHO ────────────────────────────────────────────────────────
+function salvarDesempenho() {
+  var cfg = sbConfig();
+  var real = document.getElementById('fat-real-input').value;
+  var meta = document.getElementById('fat-meta-input').value;
+  lss('fat-real', real);
+  lss('fat-meta', meta);
+  if (cfg.url && cfg.key && meta) {
+    sbPost('desempenho', {
+      promotor: cfg.promotor, loja: cfg.loja,
+      mes_referencia: new Date().toISOString().slice(0,7),
+      meta_mensal: parseFloat(meta),
+      realizado: parseFloat(real)||0
+    })
+    .then(function(r){ alert(r.ok ? '✓ Desempenho salvo no banco!' : '✓ Salvo localmente.'); })
+    .catch(function(){ alert('✓ Salvo localmente.'); });
+  } else {
+    alert('✓ Desempenho salvo!');
+  }
+  calcMeta();
 }
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
