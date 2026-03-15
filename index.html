@@ -843,14 +843,12 @@ function renderEstoque() {
     var gon  = estGondola[p.id] !== undefined ? estGondola[p.id] : '';
     var prp  = precoProp[p.id] || '';
 
-    // Badge: só marca crítico se o valor digitado for menor que o mínimo
+    // Badge: Crítico se sistema OU gôndola abaixo do mínimo, OK caso contrário
     var sisNum = sis !== '' ? parseInt(sis) : null;
     var gonNum = gon !== '' ? parseInt(gon) : null;
     var abaixoMin = (sisNum !== null && sisNum < p.minimo) || (gonNum !== null && gonNum < p.minimo);
     var statusCls = abaixoMin ? 'b-danger' : 'b-ok';
     var statusTxt = abaixoMin ? 'Crítico' : 'OK';
-    // Se nenhum campo preenchido, não mostra badge
-    if (sisNum === null && gonNum === null) { statusCls = 'b-neutral'; statusTxt = 'Preencher'; }
 
     var pct = (sisNum !== null && p.minimo > 0) ? Math.min(100, Math.round((sisNum/p.minimo)*100)) : 0;
     var barColor = abaixoMin ? 'var(--red)' : 'var(--green)';
@@ -1376,12 +1374,28 @@ function sbConfig() {
 // ─── SALVAR ESTOQUE ───────────────────────────────────────────────────────────
 function salvarEstoque() {
   var cfg = sbConfig();
+
+  // ── Validação obrigatória: todos os produtos precisam ter sistema E gôndola ──
+  var faltando = [];
+  produtos.forEach(function(p) {
+    var semSis = estSistema[p.id] === undefined || estSistema[p.id] === null || String(estSistema[p.id]).trim() === '';
+    var semGon = estGondola[p.id] === undefined || estGondola[p.id] === null || String(estGondola[p.id]).trim() === '';
+    var campos = [];
+    if (semSis) campos.push('sistema');
+    if (semGon) campos.push('gôndola');
+    if (campos.length > 0) faltando.push(p.nome + ' (' + campos.join(' e ') + ')');
+  });
+  if (faltando.length > 0) {
+    alert('Preencha todos os campos antes de salvar:\n\n' + faltando.map(function(n){ return '• ' + n; }).join('\n'));
+    return;
+  }
+
+  // ── Montar registros ──────────────────────────────────────────────────────
   var registros = [];
   produtos.forEach(function(p) {
-    var gon = estGondola[p.id] !== undefined ? estGondola[p.id] : null;
-    var sis = estSistema[p.id] !== undefined ? estSistema[p.id] : null;
-    var preco = precoProp[p.id] ? parseFloat(precoProp[p.id].replace(',','.')) : null;
-    if (gon === null && sis === null && preco === null) return;
+    var gon   = estGondola[p.id] !== undefined ? parseInt(estGondola[p.id]) : null;
+    var sis   = estSistema[p.id] !== undefined ? parseInt(estSistema[p.id]) : null;
+    var preco = precoProp[p.id]  ? parseFloat(precoProp[p.id].replace(',','.')) : null;
     registros.push({
       promotor: cfg.promotor, loja: cfg.loja,
       produto_nome: p.nome, sku: p.sku,
@@ -1389,27 +1403,20 @@ function salvarEstoque() {
       preco_encontrado: preco, preco_sugerido: p.preco_sugerido
     });
   });
-  // Verificar se todos os produtos têm pelo menos gôndola preenchida
-  var semDados = produtos.filter(function(p) {
-    return estGondola[p.id] === undefined && estSistema[p.id] === undefined;
-  });
-  if (!registros.length || semDados.length === produtos.length) {
-    alert('Preencha o estoque de pelo menos um produto antes de salvar.');
-    return;
-  }
-  if (semDados.length > 0) {
-    var nomes = semDados.map(function(p){ return '• ' + p.nome; }).join('\n');
-    var continuar = confirm('Os produtos abaixo estão sem dados:\n\n' + nomes + '\n\nDeseja salvar mesmo assim?');
-    if (!continuar) return;
-  }
+
   if (!cfg.url || !cfg.key) {
     alert('✓ Salvo localmente!\n\nConfigure o Supabase em ⚙️ Config para enviar ao banco.');
-    atualizarHome(); return;
+    atualizarHome();
+    return;
   }
+
   sbPost('estoque', registros)
     .then(function(r) {
-      if (r.ok) { alert('✓ Estoque salvo no banco de dados!'); }
-      else { r.text().then(function(t){ console.error(t); alert('Erro: ' + t.slice(0,120)); }); }
+      if (r.ok) {
+        alert('✓ Estoque salvo no banco de dados!');
+      } else {
+        r.text().then(function(t){ alert('Erro ao salvar: ' + t.slice(0,150)); });
+      }
     })
     .catch(function(e){ alert('Erro de conexão: ' + e); });
   atualizarHome();
@@ -1458,13 +1465,15 @@ function salvarConcorrentes() {
       produto_similar: p.concorrente ? p.concorrente.nome : ''
     });
   });
-    // Bloquear se algum produto não tiver gôndola preenchida
-  var faltando = produtos.filter(function(p) {
-    return estGondola[p.id] === undefined || estGondola[p.id] === null || String(estGondola[p.id]) === '';
+    // BLOQUEAR se qualquer produto não tiver sistema E gôndola preenchidos
+  var faltando = [];
+  produtos.forEach(function(p) {
+    var semSis = estSistema[p.id] === undefined || estSistema[p.id] === null || String(estSistema[p.id]).trim() === '';
+    var semGon = estGondola[p.id] === undefined || estGondola[p.id] === null || String(estGondola[p.id]).trim() === '';
+    if (semSis || semGon) faltando.push(p.nome + (semSis ? ' (sistema)' : '') + (semGon ? ' (gôndola)' : ''));
   });
   if (faltando.length > 0) {
-    var nomes = faltando.map(function(p){ return '• ' + p.nome; }).join('\n');
-    alert('Preencha a Ponta de Gôndola de todos os produtos:\n\n' + nomes);
+    alert('Preencha todos os campos antes de salvar:\n\n' + faltando.map(function(n){ return '• ' + n; }).join('\n'));
     return;
   }
   if (!registros.length) {
