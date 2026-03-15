@@ -931,60 +931,64 @@ function renderConcorrentes() {
     el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Cadastre seus produtos em ⚙️ Config para ver os concorrentes.</div>';
     return;
   }
-
   var html = '';
   produtos.forEach(function(p) {
     var meuPreco  = precoProp[p.id] ? parseFloat(precoProp[p.id].replace(',','.')) : null;
-    var concPreco = precoConc[p.id] ? parseFloat(precoConc[p.id].replace(',','.')) : null;
-    var compHtml = '—';
-    var compCls  = '';
-
+    var concVal   = precoConc[p.id] || '';
+    var concPreco = concVal ? parseFloat(concVal.replace(',','.')) : null;
+    var compHtml = '—'; var compCls = 'b-neutral';
     if (meuPreco && concPreco) {
-      var dif    = meuPreco - concPreco;
-      var difPct = ((dif / concPreco) * 100).toFixed(1);
-      if (Math.abs(dif) < 0.01) { compHtml = '= Preço igual';              compCls = 'b-ok';     }
-      else if (dif < 0)         { compHtml = '✓ ' + Math.abs(difPct) + '% mais barato'; compCls = 'b-ok'; }
-      else                      { compHtml = '▲ ' + difPct + '% mais caro';              compCls = 'b-danger'; }
+      var dif = meuPreco - concPreco;
+      var pct = ((dif/concPreco)*100).toFixed(1);
+      if (Math.abs(dif)<0.01){ compHtml='= Igual'; compCls='b-ok'; }
+      else if (dif<0){ compHtml='✓ '+Math.abs(pct)+'% mais barato'; compCls='b-ok'; }
+      else { compHtml='▲ '+pct+'% mais caro'; compCls='b-danger'; }
     }
-
-    var meuVal  = meuPreco ? 'R$ ' + meuPreco.toFixed(2).replace('.',',') : 'Preencher no Estoque';
-    var concVal = precoConc[p.id] || '';
-
-    // Dados do concorrente (pode não ter similar cadastrado)
-    var temSimilar   = p.concorrente && p.concorrente.nome;
-    var concEmpresa  = temSimilar ? p.concorrente.empresa : '—';
-    var concNome     = temSimilar ? p.concorrente.nome    : 'Similar não cadastrado';
-    var concColLbl   = temSimilar ? (concEmpresa + ' — ' + concNome) : 'Concorrente';
+    var meuVal    = meuPreco ? 'R$ '+meuPreco.toFixed(2).replace('.',',') : 'Preencher no Estoque';
+    var temSimilar  = p.concorrente && p.concorrente.nome;
+    var concEmpresa = temSimilar ? p.concorrente.empresa : '—';
+    var concNome    = temSimilar ? p.concorrente.nome : 'Similar não cadastrado';
+    var btnLabel    = concVal ? 'R$ '+concVal : 'Tocar para digitar';
+    var btnCor      = concVal ? 'var(--brand)' : 'var(--text3)';
 
     html += '<div class="conc-item">' +
       '<div class="conc-head">' +
-        '<div><div class="conc-nome">' + p.nome + '</div></div>' +
-        (compCls ? '<span class="badge ' + compCls + '" style="font-size:10px">' + compHtml + '</span>' : '') +
+        '<div><div class="conc-nome">'+p.nome+'</div></div>' +
+        '<span class="badge '+compCls+'" style="font-size:10px">'+compHtml+'</span>' +
       '</div>' +
       '<div class="conc-body">' +
         '<div class="conc-col">' +
           '<div class="conc-col-lbl">Meu preço</div>' +
-          '<div class="conc-preco-val" style="color:var(--blue)">' + meuVal + '</div>' +
-          '<div style="font-size:11px;color:var(--text3);margin-top:2px">Sugerido: R$ ' + p.preco_sugerido.toFixed(2).replace('.',',') + '</div>' +
+          '<div class="conc-preco-val">'+meuVal+'</div>' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:2px">Sugerido: R$ '+p.preco_sugerido.toFixed(2).replace('.',',')+'</div>' +
         '</div>' +
-        '<div class="conc-col">' +
-          '<div class="conc-col-lbl">' + concColLbl + '</div>' +
-          (temSimilar
-            ? '<input class="conc-input" type="text" inputmode="decimal" placeholder="0,00" id="conc-' + p.id + '" data-pid="' + p.id + '" value="' + concVal + '" oninput="onConc(this.dataset.pid)">'
-            : '<div style="font-size:12px;color:var(--text3);font-style:italic">Cadastre em ⚙️ Config</div>'
-          ) +
-          '<div style="font-size:11px;color:var(--brand);margin-top:4px;font-weight:600">👆 Digite o preço</div>' +
+        '<div class="conc-col" style="display:flex;flex-direction:column;justify-content:center">' +
+          '<div class="conc-col-lbl">'+concEmpresa+' — '+concNome+'</div>' +
+          '<button data-pid="' + p.id + '" onclick="abrirInputConc(this.dataset.pid)" style="margin-top:6px;background:var(--surface2);border:2px solid var(--brand);border-radius:var(--radius-sm);padding:12px;width:100%;text-align:left;font-family:monospace;font-size:18px;font-weight:700;color:' + btnCor + ';cursor:pointer">' + btnLabel + '</button>' +
+          '<div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:center">toque para editar</div>' +
         '</div>' +
       '</div>' +
       '<div class="conc-foot">' +
-        '<div style="font-size:11px;color:var(--text3)">Similar: ' + concNome + '</div>' +
-        '<span id="comp-' + p.id + '" class="badge ' + (compCls || 'b-neutral') + '" style="font-size:10px">' + (compCls ? compHtml : '—') + '</span>' +
+        '<div style="font-size:11px;color:var(--text3)">Similar: '+concNome+'</div>' +
+        '<span class="badge '+compCls+'" style="font-size:10px">'+compHtml+'</span>' +
       '</div>' +
     '</div>';
   });
-
   el.innerHTML = html;
   atualizarHomeConc();
+}
+
+function abrirInputConc(pid) {
+  var atual = precoConc[pid] || '';
+  var p = produtos.find(function(x){ return x.id===pid; });
+  var nome = p ? p.nome : 'produto';
+  var valor = prompt('Preço do concorrente\n' + nome + '\n\nDigite o valor (ex: 29,90):', atual);
+  if (valor === null) return; // cancelou
+  valor = valor.trim().replace(',','.');
+  var num = parseFloat(valor);
+  if (valor !== '' && isNaN(num)) { alert('Valor inválido. Use números, ex: 29.90'); return; }
+  precoConc[pid] = valor !== '' ? num.toFixed(2).replace('.',',') : '';
+  renderConcorrentes();
 }
 
 function onConc(pid) {
