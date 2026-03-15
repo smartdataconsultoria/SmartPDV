@@ -1368,7 +1368,7 @@ function salvarEstoque() {
     if (gon === null && sis === null && preco === null) return;
     registros.push({
       promotor: cfg.promotor, loja: cfg.loja,
-      produto_id: p.id, produto_nome: p.nome, sku: p.sku,
+      produto_nome: p.nome, sku: p.sku,
       qtd_sistema: sis, qtd_gondola: gon,
       preco_encontrado: preco, preco_sugerido: p.preco_sugerido
     });
@@ -1470,20 +1470,21 @@ function salvarDesempenho() {
 
 // ─── CADASTRO DE PRODUTOS ─────────────────────────────────────────────────────
 function addProduto() {
-  var nome = document.getElementById('np-nome').value.trim();
-  var sku  = document.getElementById('np-sku').value.trim();
-  var min  = parseInt(document.getElementById('np-minimo').value);
-  var preco= parseFloat(document.getElementById('np-preco').value.replace(',','.'));
+  var nome  = document.getElementById('np-nome').value.trim();
+  var sku   = document.getElementById('np-sku').value.trim();
+  var min   = parseInt(document.getElementById('np-minimo').value);
+  var preco = parseFloat(document.getElementById('np-preco').value.replace(',','.'));
   if (!nome) { alert('Informe o nome do produto.'); return; }
   if (!sku)  { alert('Informe o SKU/código.'); return; }
   if (isNaN(min)||min<1) { alert('Informe o estoque mínimo.'); return; }
   var lista = carregarProdutos();
   if (lista.find(function(p){ return p.sku===sku; })) { alert('SKU já cadastrado.'); return; }
-  lista.push({
+  var novoProduto = {
     id: 'p'+Date.now(),
     nome: nome, sku: sku, minimo: min,
     preco_sugerido: isNaN(preco)?0:preco
-  });
+  };
+  lista.push(novoProduto);
   localStorage.setItem('cadastro-produtos', JSON.stringify(lista));
   document.getElementById('np-nome').value='';
   document.getElementById('np-sku').value='';
@@ -1491,7 +1492,22 @@ function addProduto() {
   document.getElementById('np-preco').value='';
   renderCadastroProdutos();
   recarregarProdutos();
-  alert('✓ Produto cadastrado!');
+  // Salvar também no Supabase para que o estoque funcione
+  sbPost('produtos', {
+    id: novoProduto.id,
+    nome: novoProduto.nome,
+    sku: novoProduto.sku,
+    minimo: novoProduto.minimo,
+    preco_sugerido: novoProduto.preco_sugerido
+  }).then(function(r) {
+    if (r && r.ok) {
+      alert('✓ Produto cadastrado e salvo no banco!');
+    } else {
+      alert('✓ Produto cadastrado localmente!\n\nSe quiser salvar no banco, configure o Supabase em Config.');
+    }
+  }).catch(function() {
+    alert('✓ Produto cadastrado!');
+  });
 }
 
 function removeProduto(id) {
@@ -1539,16 +1555,26 @@ function addConcorrente() {
   if (!empresa) { alert('Informe a empresa concorrente.'); return; }
   if (!similar) { alert('Informe o produto similar.'); return; }
   var lista = carregarConcorrentes();
-  // Permite só um similar por produto (substitui se já existe)
   lista = lista.filter(function(c){ return c.produto_id!==pid; });
-  lista.push({ id: 'c'+Date.now(), produto_id: pid, empresa: empresa, similar: similar });
+  var novoConc = { id: 'c'+Date.now(), produto_id: pid, empresa: empresa, produto_similar: similar };
+  lista.push(novoConc);
   localStorage.setItem('cadastro-concorrentes', JSON.stringify(lista));
   document.getElementById('nc-meu-produto').value='';
   document.getElementById('nc-empresa').value='';
   document.getElementById('nc-similar').value='';
   renderCadastroConcorrentes();
   recarregarProdutos();
-  alert('✓ Similar cadastrado!');
+  // Salvar no Supabase
+  sbPost('concorrentes', {
+    id: novoConc.id,
+    produto_id: novoConc.produto_id,
+    empresa: novoConc.empresa,
+    produto_similar: novoConc.produto_similar
+  }).then(function(r) {
+    alert(r && r.ok ? '✓ Similar cadastrado e salvo no banco!' : '✓ Similar cadastrado localmente!');
+  }).catch(function() {
+    alert('✓ Similar cadastrado!');
+  });
 }
 
 function removeConcorrente(id) {
