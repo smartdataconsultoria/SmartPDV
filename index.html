@@ -1013,13 +1013,58 @@ function getProdutos() {
 var produtos = [];
 
 // Estado da sessão
-var estSistema  = {};   // {pid: valor}
-var estGondola  = {};   // {pid: valor}
-var precoProp   = {};   // {pid: valor}
-var precoConc   = {};   // {pid: valor}
+
+// ─── CHAVE POR LOJA ───────────────────────────────────────────────────────────
+function lojaKey(suffix) {
+  var loja = ls('promotor-loja') || 'default';
+  return 'loja:' + loja + ':' + suffix;
+}
+function lsLoja(suffix) {
+  return localStorage.getItem(lojaKey(suffix));
+}
+function lssLoja(suffix, val) {
+  localStorage.setItem(lojaKey(suffix), val);
+}
+function lsLojaObj(suffix) {
+  try { return JSON.parse(lsLoja(suffix) || 'null'); } catch(e){ return null; }
+}
+function lssLojaObj(suffix, obj) {
+  lssLoja(suffix, JSON.stringify(obj));
+}
+
+var estSistema  = {};
+var estGondola  = {};
+var precoProp   = {};
+var precoConc   = {};
 var avarias     = [];
 var oportunidades = [];
 var expoChecks  = 0;
+
+// ─── CARREGAR/SALVAR ESTADO POR LOJA ─────────────────────────────────────────
+function carregarEstadoLoja() {
+  var est = lsLojaObj('estoque') || {};
+  estSistema = est.sistema || {};
+  estGondola = est.gondola || {};
+  precoProp  = est.preco   || {};
+  precoConc  = est.conc    || {};
+  avarias    = lsLojaObj('avarias') || [];
+  oportunidades = lsLojaObj('oportunidades') || [];
+  expoChecks = parseInt(lsLoja('expo-checks') || '0');
+  // Atualizar campos de meta
+  var fr = lsLoja('fat-real'); var fm = lsLoja('fat-meta');
+  var elR = document.getElementById('fat-real-input');
+  var elM = document.getElementById('fat-meta-input');
+  if (fr && elR) elR.value = fr;
+  if (fm && elM) elM.value = fm;
+  if (fr || fm) calcMeta();
+}
+
+function salvarEstadoLoja() {
+  lssLojaObj('estoque', {sistema: estSistema, gondola: estGondola, preco: precoProp, conc: precoConc});
+  lssLojaObj('avarias', avarias);
+  lssLojaObj('oportunidades', oportunidades);
+  lssLoja('expo-checks', expoChecks);
+}
 var expoTotal   = 8;
 
 // ─── CLOCK ───────────────────────────────────────────────────────────────────
@@ -1102,12 +1147,26 @@ function selecionarLoja(id) {
   var lista = carregarLojas();
   var loja = lista.find(function(l){ return l.id === id; });
   if (!loja) return;
+  // Salvar estado da loja atual antes de trocar
+  salvarEstadoLoja();
   lss('promotor-loja', loja.nome);
   lss('promotor-rede', loja.rede || '');
   lss('promotor-cidade', loja.cidade || '');
+  // Limpar estado em memória
+  estSistema={}; estGondola={}; precoProp={}; precoConc={};
+  avarias=[]; oportunidades=[]; expoChecks=0;
+  // Carregar estado da nova loja
+  carregarEstadoLoja();
   syncLoja();
   renderLojas();
+  renderEstoque();
+  renderConcorrentes();
+  renderAvarias();
+  renderOportunidades();
+  atualizarHome();
+  calcMeta();
   fecharSeletorLoja();
+  alert('✓ Loja alterada para: ' + loja.nome);
 }
 
 function abrirSeletorLoja() {
@@ -1230,11 +1289,13 @@ function onSis(pid) {
   var v = parseInt(document.getElementById('sis-'+pid).value);
   estSistema[pid] = isNaN(v)?undefined:v;
   calcDif(pid);
+  salvarEstadoLoja();
 }
 function onGon(pid) {
   var v = parseInt(document.getElementById('gon-'+pid).value);
   estGondola[pid] = isNaN(v)?undefined:v;
   calcDif(pid);
+  salvarEstadoLoja();
 }
 function calcDif(pid) {
   var el = document.getElementById('dif-'+pid);
@@ -1561,7 +1622,7 @@ function renderDesempProdutos() {
 }
 
 function renderDesempHistorico() {
-  var historico = JSON.parse(localStorage.getItem('desemp-historico') || '[]');
+  var historico = lsLojaObj('desemp-historico') || [];
   var el = document.getElementById('desemp-historico');
   if (!el) return;
   if (!historico.length) {
@@ -1871,18 +1932,18 @@ function salvarDesempenho() {
   var real = parseFloat(document.getElementById('fat-real-input').value) || 0;
   var meta = parseFloat(document.getElementById('fat-meta-input').value) || 0;
   if (!meta) { alert('Informe a meta do mês antes de salvar.'); return; }
-  lss('fat-real', real);
-  lss('fat-meta', meta);
+  lss('fat-real', real); lssLoja('fat-real', real);
+  lss('fat-meta', meta); lssLoja('fat-meta', meta);
 
   // Gravar no histórico local
-  var historico = JSON.parse(localStorage.getItem('desemp-historico') || '[]');
+  var historico = lsLojaObj('desemp-historico') || [];
   var hoje = new Date();
   var dataStr = hoje.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
   // Atualizar entrada do dia ou adicionar nova
   var idx = historico.findIndex(function(h){ return h.data === dataStr; });
   if (idx >= 0) { historico[idx] = {data: dataStr, real: real, meta: meta}; }
   else { historico.push({data: dataStr, real: real, meta: meta}); }
-  localStorage.setItem('desemp-historico', JSON.stringify(historico));
+  lssLojaObj('desemp-historico', historico);
 
   if (cfg.url && cfg.key) {
     sbPost('desempenho', {
@@ -2171,13 +2232,13 @@ function salvarPerfil(){
   var meta = document.getElementById('cfg-meta').value.trim();
   var real = document.getElementById('cfg-realizado').value.trim();
   if (meta) {
-    lss('fat-meta', meta);
+    lss('fat-meta', meta); lssLoja('fat-meta', meta);
     // Sincronizar com campo da tela desempenho
     var elMeta = document.getElementById('fat-meta-input');
     if (elMeta) elMeta.value = meta;
   }
   if (real) {
-    lss('fat-real', real);
+    lss('fat-real', real); lssLoja('fat-real', real);
     var elReal = document.getElementById('fat-real-input');
     if (elReal) elReal.value = real;
   }
@@ -2277,10 +2338,7 @@ window.onload = function() {
     var v=ls(k); var el=document.getElementById(cfgMap[k]);
     if(v&&el) el.value=v;
   });
-  var fr=ls('fat-real'), fm=ls('fat-meta');
-  if(fr){document.getElementById('fat-real-input').value=fr;}
-  if(fm){document.getElementById('fat-meta-input').value=fm;}
-  if(fr||fm) calcMeta();
+  // meta carregada por carregarEstadoLoja()
   // Restaurar tema salvo
   if (ls('tema') === 'light') {
     document.body.classList.add('light');
@@ -2293,6 +2351,7 @@ window.onload = function() {
   }
   renderLojas();
   syncLoja();
+  carregarEstadoLoja();
   // Carregar produtos do localStorage
   produtos = getProdutos();
   renderCadastroProdutos();
