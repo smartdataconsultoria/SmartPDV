@@ -271,7 +271,8 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       </div>
       <div class="h-time" id="hclock">--:--</div>
     </div>
-    <div class="loja-pill">🏪 <span id="loja-header">Configure sua loja em ⚙️</span></div>
+    <div class="loja-pill" onclick="abrirSeletorLoja()" style="cursor:pointer" id="loja-pill-home">🏪 <span id="loja-header">Selecionar loja ▾</span></div>
+    <div id="seletor-lojas" style="display:none;margin-top:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden"></div>
   </div>
 
   <div class="sec">
@@ -724,17 +725,30 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
   </div>
   <div class="sec">
     <div class="card">
-      <div class="ct">Meu perfil — loja fixa</div>
+      <div class="ct">Meu perfil</div>
       <div class="field"><label>Meu nome</label><input type="text" id="cfg-nome" placeholder="Seu nome completo"></div>
-      <div class="field"><label>Minha loja</label><input type="text" id="cfg-loja" placeholder="Ex: Atacadão — Boa Viagem"></div>
-      <div class="field"><label>Rede</label>
-        <select id="cfg-rede">
-          <option value="">Selecione</option>
-          <option>Atacadão</option><option>Carrefour</option><option>Extra</option>
-          <option>Assaí</option><option>Pão de Açúcar</option><option>Makro</option><option>Outra</option>
-        </select>
+
+      <div style="height:1px;background:var(--border);margin:4px 0 12px"></div>
+      <div class="ct" style="margin-bottom:10px">Minhas lojas (até 5)</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Cadastre as lojas onde você atua. Na tela principal você escolhe qual está visitando.</div>
+
+      <div id="lojas-lista" style="margin-bottom:10px"></div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.8px">Nova loja</div>
+        <div class="field" style="margin-bottom:8px"><label>Nome da loja</label><input type="text" id="nova-loja-nome" placeholder="Ex: Atacadão — Boa Viagem"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="field" style="margin:0"><label>Rede</label>
+            <select id="nova-loja-rede">
+              <option value="">Selecione</option>
+              <option>Atacadão</option><option>Carrefour</option><option>Extra</option>
+              <option>Assaí</option><option>Pão de Açúcar</option><option>Makro</option><option>Outra</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0"><label>Cidade</label><input type="text" id="nova-loja-cidade" placeholder="Recife"></div>
+        </div>
+        <button class="btn btn-o" style="margin-top:8px;font-size:13px" onclick="addLoja()">+ Adicionar loja</button>
       </div>
-      <div class="field"><label>Cidade</label><input type="text" id="cfg-cidade" placeholder="Recife"></div>
 
       <div style="height:1px;background:var(--border);margin:4px 0 12px"></div>
       <div class="ct" style="margin-bottom:10px">Meta mensal</div>
@@ -1021,13 +1035,119 @@ function tick() {
 function setTxt(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
 tick(); setInterval(tick,30000);
 
+
+// ─── LOJAS MÚLTIPLAS ──────────────────────────────────────────────────────────
+function carregarLojas() {
+  try { return JSON.parse(localStorage.getItem('minhas-lojas') || '[]'); } catch(e){ return []; }
+}
+
+function addLoja() {
+  var nome   = document.getElementById('nova-loja-nome').value.trim();
+  var rede   = document.getElementById('nova-loja-rede').value;
+  var cidade = document.getElementById('nova-loja-cidade').value.trim();
+  if (!nome) { alert('Informe o nome da loja.'); return; }
+  var lista = carregarLojas();
+  if (lista.length >= 5) { alert('Limite de 5 lojas atingido. Remova uma antes de adicionar.'); return; }
+  if (lista.find(function(l){ return l.nome === nome; })) { alert('Loja já cadastrada.'); return; }
+  lista.push({ id: 'l'+Date.now(), nome: nome, rede: rede, cidade: cidade });
+  localStorage.setItem('minhas-lojas', JSON.stringify(lista));
+  document.getElementById('nova-loja-nome').value = '';
+  document.getElementById('nova-loja-rede').value = '';
+  document.getElementById('nova-loja-cidade').value = '';
+  // Se for a primeira loja, definir como ativa
+  if (lista.length === 1) {
+    lss('promotor-loja', nome);
+    lss('promotor-rede', rede);
+    lss('promotor-cidade', cidade);
+    syncLoja();
+  }
+  renderLojas();
+  alert('✓ Loja adicionada!');
+}
+
+function removerLoja(id) {
+  var lista = carregarLojas().filter(function(l){ return l.id !== id; });
+  localStorage.setItem('minhas-lojas', JSON.stringify(lista));
+  // Se era a loja ativa, limpar
+  renderLojas();
+  syncLoja();
+}
+
+function renderLojas() {
+  var lista = carregarLojas();
+  var el = document.getElementById('lojas-lista');
+  if (!el) return;
+  var ativa = ls('promotor-loja') || '';
+  if (!lista.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px 0 4px">Nenhuma loja cadastrada.</div>';
+    return;
+  }
+  el.innerHTML = lista.map(function(l) {
+    var isAtiva = l.nome === ativa;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="flex:1;cursor:pointer" data-lid="' + l.id + '" onclick="selecionarLoja(this.dataset.lid)">' +
+        '<div style="font-size:13px;font-weight:600;color:' + (isAtiva ? 'var(--brand)' : 'var(--text)') + '">' +
+          (isAtiva ? '▶ ' : '') + l.nome + '</div>' +
+        '<div style="font-size:11px;color:var(--text3);margin-top:1px">' + (l.rede||'') + (l.cidade ? ' · '+l.cidade : '') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;align-items:center">' +
+        (!isAtiva ? '<button data-lid="' + l.id + '" onclick="selecionarLoja(this.dataset.lid)" style="background:var(--brand-light);color:var(--brand);border:1px solid var(--brand);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:600">Ativar</button>' : '<span style="font-size:10px;color:var(--brand);font-weight:600">ATIVA</span>') +
+        '<button data-lid="' + l.id + '" onclick="removerLoja(this.dataset.lid)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer">✕</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function selecionarLoja(id) {
+  var lista = carregarLojas();
+  var loja = lista.find(function(l){ return l.id === id; });
+  if (!loja) return;
+  lss('promotor-loja', loja.nome);
+  lss('promotor-rede', loja.rede || '');
+  lss('promotor-cidade', loja.cidade || '');
+  syncLoja();
+  renderLojas();
+  fecharSeletorLoja();
+}
+
+function abrirSeletorLoja() {
+  var lista = carregarLojas();
+  var seletor = document.getElementById('seletor-lojas');
+  if (!seletor) return;
+  if (seletor.style.display !== 'none') { fecharSeletorLoja(); return; }
+  if (!lista.length) {
+    alert('Cadastre suas lojas em ⚙️ Config primeiro.');
+    return;
+  }
+  var ativa = ls('promotor-loja') || '';
+  seletor.innerHTML = lista.map(function(l) {
+    var isAtiva = l.nome === ativa;
+    return '<div data-lid="' + l.id + '" onclick="selecionarLoja(this.dataset.lid)" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">' +
+      '<div>' +
+        '<div style="font-size:13px;font-weight:' + (isAtiva?'700':'500') + ';color:' + (isAtiva?'var(--brand)':'var(--text)') + '">' + l.nome + '</div>' +
+        '<div style="font-size:11px;color:var(--text3)">' + (l.rede||'') + (l.cidade?' · '+l.cidade:'') + '</div>' +
+      '</div>' +
+      (isAtiva ? '<span style="font-size:10px;color:var(--brand);font-weight:700">●</span>' : '') +
+    '</div>';
+  }).join('');
+  seletor.style.display = 'block';
+}
+
+function fecharSeletorLoja() {
+  var seletor = document.getElementById('seletor-lojas');
+  if (seletor) seletor.style.display = 'none';
+}
+
 // ─── LOJA ────────────────────────────────────────────────────────────────────
 function syncLoja() {
-  var l = ls('promotor-loja')||'Configure sua loja em ⚙️';
-  ['loja-header','loja-est','loja-exp','loja-conc','loja-av','loja-desemp','loja-op'].forEach(function(id){setTxt(id,l);});
+  var lista = carregarLojas();
+  var l = ls('promotor-loja') || '';
+  if (!l && lista.length) { l = lista[0].nome; lss('promotor-loja', l); }
+  var display = l || 'Selecionar loja ▾';
+  ['loja-header','loja-est','loja-exp','loja-conc','loja-av','loja-desemp','loja-op'].forEach(function(id){setTxt(id,display);});
   var nome = ls('promotor-nome')||'';
   var nomeEl = document.getElementById('home-promotor-nome');
-  if (nomeEl) nomeEl.textContent = nome ? nome : '';
+  if (nomeEl) nomeEl.textContent = nome;
 }
 function ls(k){return localStorage.getItem(k);}
 function lss(k,v){localStorage.setItem(k,v);}
@@ -2047,9 +2167,7 @@ function previewMeta() {
 }
 function salvarPerfil(){
   lss('promotor-nome',document.getElementById('cfg-nome').value.trim());
-  lss('promotor-loja',document.getElementById('cfg-loja').value.trim());
-  lss('promotor-rede',document.getElementById('cfg-rede').value);
-  lss('promotor-cidade',document.getElementById('cfg-cidade').value.trim());
+  // loja agora é gerenciada pelo sistema de múltiplas lojas
   var meta = document.getElementById('cfg-meta').value.trim();
   var real = document.getElementById('cfg-realizado').value.trim();
   if (meta) {
@@ -2151,8 +2269,7 @@ window.onload = function() {
   // Verificar se já tem sessão ativa
   verificarSessao();
   var cfgMap = {
-    'promotor-nome':'cfg-nome','promotor-loja':'cfg-loja',
-    'promotor-rede':'cfg-rede','promotor-cidade':'cfg-cidade',
+    'promotor-nome':'cfg-nome',
     'fat-meta':'cfg-meta','fat-real':'cfg-realizado',
     'sb-url':'cfg-sb-url','sb-key':'cfg-sb-key'
   };
@@ -2174,6 +2291,7 @@ window.onload = function() {
     var meta = document.querySelector('meta[name=theme-color]');
     if (meta) meta.content = '#FFFFFF';
   }
+  renderLojas();
   syncLoja();
   // Carregar produtos do localStorage
   produtos = getProdutos();
