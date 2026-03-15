@@ -791,7 +791,13 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
           <div class="field" style="margin:0"><label>Estoque mínimo</label><input type="number" id="np-minimo" placeholder="20" inputmode="numeric"></div>
         </div>
         <div class="field" style="margin-top:8px"><label>Preço sugerido p/ venda (R$)</label><input type="text" id="np-preco" placeholder="0,00" inputmode="decimal"></div>
-        <button class="btn btn-p" style="margin-top:4px;font-size:13px" onclick="addProduto()">+ Adicionar produto</button>
+        <div class="field" style="margin-top:8px">
+          <label>Lojas onde este produto é vendido</label>
+          <div id="np-lojas-check" style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+            <div style="font-size:12px;color:var(--text3);font-style:italic">Cadastre lojas em "Minhas lojas" para selecionar</div>
+          </div>
+        </div>
+        <button class="btn btn-p" style="margin-top:8px;font-size:13px" onclick="addProduto()">+ Adicionar produto</button>
         <button class="btn btn-o" style="margin-top:8px;font-size:12px" onclick="sincronizarProdutos()">↻ Sincronizar com banco</button>
       </div>
       <div id="lista-produtos-cfg"></div>
@@ -831,12 +837,7 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
   <button class="ni"        id="ni-exposicao"    onclick="navTo('exposicao')">   <span class="ni-icon">🏪</span>Exposição</button>
   <button class="ni"        id="ni-concorrentes" onclick="navTo('concorrentes')"><span class="ni-icon">🏁</span>Concorr.</button>
   <button class="ni"        id="ni-avarias"      onclick="navTo('avarias')">     <span class="ni-icon">⚠️</span>Avarias</button>
-  <button class="ni"        id="ni-desempenho"   onclick="navTo('desempenho')">  <span class="ni-icon">📈</span>Desemp.</button>
-  <button class="ni"        id="ni-oportunidades"onclick="navTo('oportunidades')"><span class="ni-icon">💡</span>Oprtun.</button>
-  <button class="ni"        id="ni-config"       onclick="navTo('config')">      <span class="ni-icon">⚙️</span>Config</button>
-</nav>
-
-<script>// ─── AUTENTICAÇÃO ────────────────────────────────────────────────────────────
+  <button class="ni"     // ─── AUTENTICAÇÃO ────────────────────────────────────────────────────────────
 var SUPABASE_URL = '';
 var SUPABASE_KEY = '';
 
@@ -999,10 +1000,15 @@ function carregarConcorrentes() {
   return [];
 }
 function getProdutos() {
-  // Mescla: para cada produto, busca o similar cadastrado
+  var lojaAtiva = ls('promotor-loja') || '';
   var prods = carregarProdutos();
   var concs = carregarConcorrentes();
-  return prods.map(function(p) {
+  // Filtrar apenas produtos desta loja (se produto não tem lojas = mostra em todas)
+  var filtrados = prods.filter(function(p) {
+    if (!p.lojas || !p.lojas.length) return true;
+    return p.lojas.indexOf(lojaAtiva) !== -1;
+  });
+  return filtrados.map(function(p) {
     var conc = concs.find(function(c){ return c.produto_id === p.id; });
     return Object.assign({}, p, {
       concorrente: conc ? {nome: conc.produto_similar || conc.similar, empresa: conc.empresa} : null,
@@ -1229,6 +1235,7 @@ function navTo(name) {
   if (name === 'config') {
     renderCadastroProdutos();
     renderCadastroConcorrentes();
+    renderNpLojasCheck();
   }
 }
 
@@ -1979,12 +1986,18 @@ function addProduto() {
   if (!nome) { alert('Informe o nome do produto.'); return; }
   if (!sku)  { alert('Informe o SKU/código.'); return; }
   if (isNaN(min)||min<1) { alert('Informe o estoque mínimo.'); return; }
+  // Coletar lojas selecionadas
+  var lojasCheck = document.querySelectorAll('#np-lojas-check input[type=checkbox]:checked');
+  var lojasSel = [];
+  lojasCheck.forEach(function(cb){ lojasSel.push(cb.dataset.loja); });
+  if (!lojasSel.length) { alert('Selecione pelo menos uma loja para este produto.'); return; }
   var lista = carregarProdutos();
   if (lista.find(function(p){ return p.sku===sku; })) { alert('SKU já cadastrado.'); return; }
   var novoProduto = {
     id: 'p'+Date.now(),
     nome: nome, sku: sku, minimo: min,
-    preco_sugerido: isNaN(preco)?0:preco
+    preco_sugerido: isNaN(preco)?0:preco,
+    lojas: lojasSel
   };
   lista.push(novoProduto);
   localStorage.setItem('cadastro-produtos', JSON.stringify(lista));
@@ -2056,23 +2069,46 @@ function renderCadastroProdutos() {
   if (!el) return;
   if (!lista.length) {
     el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum produto cadastrado.</div>';
+    renderNpLojasCheck();
     return;
   }
   el.innerHTML = lista.map(function(p) {
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">' +
-      '<div>' +
-        '<div style="font-size:13px;font-weight:500;color:var(--text)">'+p.nome+'</div>' +
-        '<div style="font-size:11px;color:var(--text3);margin-top:1px">'+p.sku+' · Mín: '+p.minimo+' un · Sugerido: R$ '+p.preco_sugerido.toFixed(2).replace('.',',')+'</div>' +
+    var lojas = p.lojas && p.lojas.length ? p.lojas.join(', ') : '<span style="color:var(--amber)">Nenhuma loja vinculada</span>';
+    return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div style="flex:1">' +
+          '<div style="font-size:13px;font-weight:600;color:var(--text)">' + p.nome + '</div>' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:1px">' + p.sku + ' · Mín: ' + p.minimo + ' · Sugerido: R$ ' + p.preco_sugerido.toFixed(2).replace('.',',') + '</div>' +
+          '<div style="font-size:11px;margin-top:3px">🏪 ' + lojas + '</div>' +
+        '</div>' +
+        '<button data-id="' + p.id + '" onclick="removeProduto(this.dataset.id)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;margin-left:8px;flex-shrink:0">Remover</button>' +
       '</div>' +
-      '<button data-id="'+p.id+'" onclick="removeProduto(this.dataset.id)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Remover</button>' +
     '</div>';
   }).join('');
-  // Atualizar select do cadastro de concorrentes
+  // Atualizar select do concorrente
   var sel = document.getElementById('nc-meu-produto');
   if (sel) {
     sel.innerHTML = '<option value="">Selecione o produto</option>' +
       lista.map(function(p){ return '<option value="'+p.id+'">'+p.nome+'</option>'; }).join('');
   }
+  renderNpLojasCheck();
+}
+
+function renderNpLojasCheck() {
+  var lojas = carregarLojas();
+  var el = document.getElementById('np-lojas-check');
+  if (!el) return;
+  if (!lojas.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);font-style:italic">Cadastre lojas em "Minhas lojas" para selecionar</div>';
+    return;
+  }
+  el.innerHTML = lojas.map(function(l) {
+    return '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">' +
+      '<input type="checkbox" data-loja="' + l.nome + '" name="np-loja-check" style="width:16px;height:16px;accent-color:var(--brand);cursor:pointer">' +
+      '<span style="font-size:13px;color:var(--text)">' + l.nome + '</span>' +
+      '<span style="font-size:11px;color:var(--text3);margin-left:2px">(' + (l.rede||'') + ')</span>' +
+    '</label>';
+  }).join('');
 }
 
 // ─── CADASTRO DE CONCORRENTES ─────────────────────────────────────────────────
@@ -2360,6 +2396,20 @@ window.onload = function() {
   syncLoja();
   carregarEstadoLoja();
   // Carregar produtos do localStorage
+  produtos = getProdutos();
+  renderCadastroProdutos();
+  renderCadastroConcorrentes();
+  renderEstoque();
+  renderConcorrentes();
+  renderFotosExposicao();
+  renderSelectAvaria();
+  renderDesempProdutos();
+  renderDesempHistorico();
+  var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
+  if(fr2||fm2) calcProjecao(fr2, fm2);
+  atualizarHome();
+};
+
   produtos = getProdutos();
   renderCadastroProdutos();
   renderCadastroConcorrentes();
