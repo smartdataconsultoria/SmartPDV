@@ -843,12 +843,14 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
 
 <script>
 // ─── AUTENTICAÇÃO ────────────────────────────────────────────────────────────
-var SUPABASE_URL = '';
-var SUPABASE_KEY = '';
+// Credenciais Supabase — fixas no código
+var SUPABASE_URL = 'https://tnaasnshthzyvbfxxerg.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuYWFzbnNodGh6eXZiZnh4ZXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1MzM0NjgsImV4cCI6MjA4OTEwOTQ2OH0.8iYQ6kAhNrtucanFCPfYrwNN18YmFeQ8JfwGPRUZxs4';
 
 function initSupabase() {
-  SUPABASE_URL = ls('sb-url') || '';
-  SUPABASE_KEY = ls('sb-key') || '';
+  // Credenciais já embutidas — não precisa de configuração manual
+  SUPABASE_URL = SUPABASE_URL || ls('sb-url') || '';
+  SUPABASE_KEY = SUPABASE_KEY || ls('sb-key') || '';
 }
 
 function cpfParaEmail(cpf) {
@@ -871,12 +873,7 @@ function fazerLogin() {
     errEl.style.display = 'block';
     return;
   }
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    // Modo offline: aceita qualquer credencial se não tiver Supabase configurado
-    errEl.textContent  = 'Supabase não configurado. Acesse ⚙️ Config primeiro.';
-    errEl.style.display = 'block';
-    return;
-  }
+  // Credenciais sempre disponíveis — embutidas no código
 
   btnEl.disabled = true;
   loadEl.style.display = 'block';
@@ -927,12 +924,7 @@ function entrarNoApp() {
 function verificarSessao() {
   initSupabase();
   var token = ls('auth-token');
-  // Se não tiver Supabase configurado, pedir configuração primeiro
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    // Mostrar login com aviso de configuração pendente
-    mostrarLogin();
-    return;
-  }
+  // Supabase sempre configurado
   if (token) {
     // Verificar se o token ainda é válido
     fetch(SUPABASE_URL + '/auth/v1/user', {
@@ -1803,8 +1795,8 @@ function atualizarHomeConc() {
 // ─── SALVAR ───────────────────────────────────────────────────────────────────
 // ─── HELPER SUPABASE ─────────────────────────────────────────────────────────
 function sbPost(tabela, payload) {
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
+  var sbUrl = SUPABASE_URL || ls('sb-url');
+  var sbKey = SUPABASE_KEY || ls('sb-key');
   if (!sbUrl || !sbKey) return Promise.resolve({ok:false});
   return fetch(sbUrl + '/rest/v1/' + tabela, {
     method: 'POST',
@@ -1820,7 +1812,8 @@ function sbPost(tabela, payload) {
 
 function sbConfig() {
   return {
-    url: ls('sb-url'), key: ls('sb-key'),
+    url: SUPABASE_URL || ls('sb-url'),
+    key: SUPABASE_KEY || ls('sb-key'),
     promotor: ls('promotor-nome')||'Promotor',
     loja: ls('promotor-loja')||'Loja'
   };
