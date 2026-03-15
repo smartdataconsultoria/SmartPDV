@@ -774,7 +774,7 @@ function getProdutos() {
   return prods.map(function(p) {
     var conc = concs.find(function(c){ return c.produto_id === p.id; });
     return Object.assign({}, p, {
-      concorrente: conc ? {nome: conc.similar, empresa: conc.empresa} : null,
+      concorrente: conc ? {nome: conc.produto_similar || conc.similar, empresa: conc.empresa} : null,
       sistema: {gondola: 0, deposito: 0, total: 0}
     });
   });
@@ -822,6 +822,11 @@ function navTo(name) {
   document.getElementById('sc-'+name).classList.add('active');
   document.getElementById('ni-'+name).classList.add('active');
   window.scrollTo(0,0);
+  // Ao entrar em Config, atualizar listas e selects
+  if (name === 'config') {
+    renderCadastroProdutos();
+    renderCadastroConcorrentes();
+  }
 }
 
 // ─── RENDER ESTOQUE ───────────────────────────────────────────────────────────
@@ -1578,7 +1583,8 @@ function renderCadastroProdutos() {
 function addConcorrente() {
   var pid     = document.getElementById('nc-meu-produto').value;
   var empresa = document.getElementById('nc-empresa').value.trim();
-  var similar = document.getElementById('nc-similar').value.trim();
+  var similar = (document.getElementById('nc-similar') || {}).value || '';
+  similar = similar.trim();
   if (!pid)     { alert('Selecione o produto próprio.'); return; }
   if (!empresa) { alert('Informe a empresa concorrente.'); return; }
   if (!similar) { alert('Informe o produto similar.'); return; }
@@ -1638,7 +1644,7 @@ function renderCadastroConcorrentes() {
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">' +
       '<div>' +
         '<div style="font-size:12px;font-weight:500;color:var(--brand)">'+(p?p.nome:'—')+'</div>' +
-        '<div style="font-size:12px;color:var(--text);margin-top:2px">↔ '+c.similar+'</div>' +
+        '<div style="font-size:12px;color:var(--text);margin-top:2px">↔ '+(c.produto_similar||c.similar||'—')+'</div>' +
         '<div style="font-size:11px;color:var(--text3);margin-top:1px">'+c.empresa+'</div>' +
       '</div>' +
       '<button data-id="'+c.id+'" onclick="removeConcorrente(this.dataset.id)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Remover</button>' +
