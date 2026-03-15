@@ -832,59 +832,64 @@ function navTo(name) {
 
 // ─── RENDER ESTOQUE ───────────────────────────────────────────────────────────
 function renderEstoque() {
+  var el = document.getElementById('lista-est');
+  if (!produtos.length) {
+    el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Cadastre seus produtos em ⚙️ Config para registrar o estoque.</div>';
+    return;
+  }
   var html = '';
   produtos.forEach(function(p) {
-    var sg = p.sistema.gondola;
-    var pct = Math.min(100, Math.round((sg/p.minimo)*100));
-    var scls = sg>=p.minimo?'b-ok':sg>=p.minimo*0.7?'b-warn':'b-danger';
-    var stxt = sg>=p.minimo?'OK':sg>=p.minimo*0.7?'Baixo':'Crítico';
-    var bcol = sg>=p.minimo?'var(--green)':sg>=p.minimo*0.7?'var(--amber)':'var(--brand)';
-    var sis = estSistema[p.id]!==undefined?estSistema[p.id]:'';
-    var gon = estGondola[p.id]!==undefined?estGondola[p.id]:'';
-    var prp = precoProp[p.id]||'';
+    var sis  = estSistema[p.id] !== undefined ? estSistema[p.id] : '';
+    var gon  = estGondola[p.id] !== undefined ? estGondola[p.id] : '';
+    var prp  = precoProp[p.id] || '';
+
+    // Badge: só marca crítico se o valor digitado for menor que o mínimo
+    var sisNum = sis !== '' ? parseInt(sis) : null;
+    var gonNum = gon !== '' ? parseInt(gon) : null;
+    var abaixoMin = (sisNum !== null && sisNum < p.minimo) || (gonNum !== null && gonNum < p.minimo);
+    var statusCls = abaixoMin ? 'b-danger' : 'b-ok';
+    var statusTxt = abaixoMin ? 'Crítico' : 'OK';
+    // Se nenhum campo preenchido, não mostra badge
+    if (sisNum === null && gonNum === null) { statusCls = 'b-neutral'; statusTxt = 'Preencher'; }
+
+    var pct = (sisNum !== null && p.minimo > 0) ? Math.min(100, Math.round((sisNum/p.minimo)*100)) : 0;
+    var barColor = abaixoMin ? 'var(--red)' : 'var(--green)';
 
     html += '<div class="ei">' +
       '<div class="ei-head">' +
         '<div><div class="ei-nome">'+p.nome+'</div><div class="ei-sku">'+p.sku+' · Mín: '+p.minimo+' un</div></div>' +
-        '<span class="badge '+scls+'">'+stxt+'</span>' +
+        '<span class="badge '+statusCls+'">'+statusTxt+'</span>' +
       '</div>' +
       '<div class="ei-cols">' +
-        // Sistema
         '<div class="ei-col">' +
           '<div class="ei-col-lbl">📊 Sist. empresa</div>' +
-          '<input class="fis-input" type="number" inputmode="numeric" placeholder="—" id="sis-'+p.id+'" value="'+sis+'"' +
-            ' oninput="onSis(\''+p.id+'\')">' +
-          '<div class="sys-sub" style="margin-top:3px">Ref: '+sg+' (sistema)</div>' +
-          '<div class="pbar" style="margin-top:6px"><div class="pfill" style="width:'+pct+'%;background:'+bcol+'"></div></div>' +
+          '<input class="fis-input" type="number" inputmode="numeric" placeholder="—" id="sis-'+p.id+'" value="'+sis+'" data-sid="'+ p.id +'" oninput="onSis(this.dataset.sid)"">' +
+          '<div class="sys-sub" style="margin-top:3px">Ref: '+p.minimo+' (mínimo)</div>' +
+          '<div class="pbar" style="margin-top:6px"><div class="pfill" style="width:'+pct+'%;background:'+barColor+'"></div></div>' +
           '<div style="font-size:10px;color:var(--text3);margin-top:2px">'+pct+'% do mínimo</div>' +
         '</div>' +
-        // Gôndola física
         '<div class="ei-col">' +
           '<div class="ei-col-lbl">🖐 Ponta gôndola</div>' +
-          '<input class="fis-input" type="number" inputmode="numeric" placeholder="0" id="gon-'+p.id+'" value="'+gon+'"' +
-            ' oninput="onGon(\''+p.id+'\')">' +
+          '<input class="fis-input" type="number" inputmode="numeric" placeholder="0" id="gon-'+p.id+'" value="'+gon+'" data-gid="'+ p.id +'" oninput="onGon(this.dataset.gid)"">' +
           '<div class="sys-sub" style="margin-top:3px">unidades contadas</div>' +
         '</div>' +
       '</div>' +
-      // Diferença
       '<div class="ei-foot">' +
         '<div id="dif-'+p.id+'" class="dif-txt" style="color:var(--text3)">— preencha os campos</div>' +
       '</div>' +
-      // Preço próprio
       '<div class="ei-preco">' +
         '<div>' +
           '<div class="ei-preco-lbl">Preço na gôndola</div>' +
           '<div style="font-size:10px;color:var(--text3)">Sugerido: R$ '+p.preco_sugerido.toFixed(2).replace('.',',')+'</div>' +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
-          '<input class="preco-mini" type="text" inputmode="decimal" placeholder="0,00" id="pp-'+p.id+'" value="'+prp+'"' +
-            ' oninput="onPrecoP(\''+p.id+'\')">' +
+          '<input class="preco-mini" type="text" inputmode="decimal" placeholder="0,00" id="pp-'+p.id+'" value="'+prp+'" data-ppid="'+ p.id +'" oninput="onPrecoP(this.dataset.ppid)"">' +
           '<span class="badge" id="ppb-'+p.id+'" style="font-size:10px">—</span>' +
         '</div>' +
       '</div>' +
     '</div>';
   });
-  document.getElementById('lista-est').innerHTML = html;
+  el.innerHTML = html;
 }
 
 function onSis(pid) {
@@ -1384,9 +1389,18 @@ function salvarEstoque() {
       preco_encontrado: preco, preco_sugerido: p.preco_sugerido
     });
   });
-  if (!registros.length) {
-    alert('Preencha pelo menos um campo antes de salvar.');
+  // Verificar se todos os produtos têm pelo menos gôndola preenchida
+  var semDados = produtos.filter(function(p) {
+    return estGondola[p.id] === undefined && estSistema[p.id] === undefined;
+  });
+  if (!registros.length || semDados.length === produtos.length) {
+    alert('Preencha o estoque de pelo menos um produto antes de salvar.');
     return;
+  }
+  if (semDados.length > 0) {
+    var nomes = semDados.map(function(p){ return '• ' + p.nome; }).join('\n');
+    var continuar = confirm('Os produtos abaixo estão sem dados:\n\n' + nomes + '\n\nDeseja salvar mesmo assim?');
+    if (!continuar) return;
   }
   if (!cfg.url || !cfg.key) {
     alert('✓ Salvo localmente!\n\nConfigure o Supabase em ⚙️ Config para enviar ao banco.');
@@ -1444,7 +1458,19 @@ function salvarConcorrentes() {
       produto_similar: p.concorrente ? p.concorrente.nome : ''
     });
   });
-  if (!registros.length) { alert('Preencha pelo menos um preço de concorrente.'); return; }
+    // Bloquear se algum produto não tiver gôndola preenchida
+  var faltando = produtos.filter(function(p) {
+    return estGondola[p.id] === undefined || estGondola[p.id] === null || String(estGondola[p.id]) === '';
+  });
+  if (faltando.length > 0) {
+    var nomes = faltando.map(function(p){ return '• ' + p.nome; }).join('\n');
+    alert('Preencha a Ponta de Gôndola de todos os produtos:\n\n' + nomes);
+    return;
+  }
+  if (!registros.length) {
+    alert('Nenhum dado para salvar.');
+    return;
+  }
   if (cfg.url && cfg.key) {
     sbPost('precos_concorrentes', registros)
       .then(function(r){ alert(r.ok ? '✓ Concorrentes salvos no banco!' : '✓ Salvo localmente.'); })
