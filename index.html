@@ -837,7 +837,12 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
   <button class="ni"        id="ni-exposicao"    onclick="navTo('exposicao')">   <span class="ni-icon">🏪</span>Exposição</button>
   <button class="ni"        id="ni-concorrentes" onclick="navTo('concorrentes')"><span class="ni-icon">🏁</span>Concorr.</button>
   <button class="ni"        id="ni-avarias"      onclick="navTo('avarias')">     <span class="ni-icon">⚠️</span>Avarias</button>
-  <button class="ni"     // ─── AUTENTICAÇÃO ────────────────────────────────────────────────────────────
+  <button class="ni"        id="ni-oportunidades" onclick="navTo('oportunidades')"><span class="ni-icon">💡</span>Oprtun.</button>
+  <button class="ni"        id="ni-config"       onclick="navTo('config')">      <span class="ni-icon">⚙️</span>Config</button>
+</nav>
+
+<script>
+// ─── AUTENTICAÇÃO ────────────────────────────────────────────────────────────
 var SUPABASE_URL = '';
 var SUPABASE_KEY = '';
 
@@ -2396,20 +2401,6 @@ window.onload = function() {
   syncLoja();
   carregarEstadoLoja();
   // Carregar produtos do localStorage
-  produtos = getProdutos();
-  renderCadastroProdutos();
-  renderCadastroConcorrentes();
-  renderEstoque();
-  renderConcorrentes();
-  renderFotosExposicao();
-  renderSelectAvaria();
-  renderDesempProdutos();
-  renderDesempHistorico();
-  var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
-  if(fr2||fm2) calcProjecao(fr2, fm2);
-  atualizarHome();
-};
-
   produtos = getProdutos();
   renderCadastroProdutos();
   renderCadastroConcorrentes();
