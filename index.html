@@ -580,20 +580,32 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       <button class="btn btn-p" onclick="salvarDesempenho()">Salvar desempenho</button>
     </div>
 
-    <!-- POR PRODUTO -->
+    <!-- HISTÓRICO DE ATUALIZAÇÕES -->
     <div class="card">
-      <div class="ct">Desempenho por produto</div>
-      <div id="desemp-produtos"><!-- gerado pelo JS --></div>
+      <div class="ct">Histórico de atualizações</div>
+      <div id="desemp-historico">
+        <div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">
+          Nenhuma atualização registrada ainda. Salve o desempenho para começar o histórico.
+        </div>
+      </div>
     </div>
 
-    <!-- HISTÓRICO SEMANAL -->
+    <!-- PROJEÇÃO DO MÊS -->
     <div class="card">
-      <div class="ct">Histórico semanal</div>
-      <div class="res-row"><span style="color:var(--text2)">Segunda</span><span class="badge b-ok">R$ 4.200</span></div>
-      <div class="res-row"><span style="color:var(--text2)">Terça</span><span class="badge b-ok">R$ 3.870</span></div>
-      <div class="res-row"><span style="color:var(--text2)">Quarta</span><span class="badge b-warn">R$ 2.100</span></div>
-      <div class="res-row"><span style="color:var(--text2)">Quinta</span><span class="badge b-ok">R$ 4.650</span></div>
-      <div class="res-row"><span style="color:var(--text2)">Hoje</span><span class="badge b-neutral">Em aberto</span></div>
+      <div class="ct">Projeção do mês</div>
+      <div class="metrics m2">
+        <div class="metric">
+          <div class="metric-n" style="color:var(--brand);font-size:16px" id="desemp-proj-dia">R$ —</div>
+          <div class="metric-l">Realizado por dia útil</div>
+        </div>
+        <div class="metric">
+          <div class="metric-n" style="color:var(--green);font-size:16px" id="desemp-proj-fim">R$ —</div>
+          <div class="metric-l">Projeção no fim do mês</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center" id="desemp-proj-txt">
+        Preencha o realizado para ver a projeção
+      </div>
     </div>
   </div>
 </div>
@@ -1215,25 +1227,64 @@ function calcMeta() {
   setTxt('home-fat-meta', 'R$ ' + meta.toLocaleString('pt-BR', {minimumFractionDigits:0}));
   var hbar = document.getElementById('home-fat-bar');
   if (hbar) hbar.style.width = pct + '%';
+  // Atualizar projeção se tela de desempenho estiver visível
+  calcProjecao(real, meta);
+  renderDesempHistorico();
 }
 
 function renderDesempProdutos() {
-  var html = '';
-  produtos.forEach(function(p,i){
-    var vendas = [4200,3100,1800,2700][i]||0;
-    var metaP  = [5000,4000,3000,3500][i]||0;
-    var pct = Math.min(100,Math.round((vendas/metaP)*100));
-    var col = pct>=100?'var(--green)':pct>=70?'var(--amber)':'var(--brand)';
-    html += '<div class="res-row">' +
-      '<div style="flex:1">' +
-        '<div style="font-size:13px;color:var(--text)">'+p.nome+'</div>' +
-        '<div class="pbar" style="margin-top:4px"><div class="pfill" style="width:'+pct+'%;background:'+col+'"></div></div>' +
-        '<div style="font-size:10px;color:var(--text3);margin-top:2px">R$ '+vendas.toLocaleString('pt-BR')+' / R$ '+metaP.toLocaleString('pt-BR')+'</div>' +
+  // Função mantida para compatibilidade — não exibe mais dados simulados
+}
+
+function renderDesempHistorico() {
+  var historico = JSON.parse(localStorage.getItem('desemp-historico') || '[]');
+  var el = document.getElementById('desemp-historico');
+  if (!el) return;
+  if (!historico.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">Nenhuma atualização registrada ainda.</div>';
+    return;
+  }
+  el.innerHTML = historico.slice().reverse().map(function(h) {
+    var pct = h.meta > 0 ? Math.round((h.real/h.meta)*100) : 0;
+    var cls = pct >= 100 ? 'b-ok' : pct >= 70 ? 'b-warn' : 'b-danger';
+    return '<div class="res-row">' +
+      '<div><div style="font-size:13px;color:var(--text)">' + h.data + '</div>' +
+      '<div style="font-size:11px;color:var(--text3)">Meta: R$ ' + Number(h.meta).toLocaleString('pt-BR') + '</div></div>' +
+      '<div style="text-align:right">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--text)">R$ ' + Number(h.real).toLocaleString('pt-BR') + '</div>' +
+        '<span class="badge ' + cls + '" style="font-size:10px">' + pct + '%</span>' +
       '</div>' +
-      '<div style="margin-left:10px"><span class="badge" style="background:'+(pct>=100?'var(--green-bg)':pct>=70?'var(--amber-bg)':'var(--red-bg)')+';color:'+(pct>=100?'var(--green)':pct>=70?'var(--amber)':'var(--red)')+'">'+pct+'%</span></div>' +
     '</div>';
-  });
-  document.getElementById('desemp-produtos').innerHTML = html;
+  }).join('');
+}
+
+function calcProjecao(real, meta) {
+  // Calcular dias úteis passados e totais no mês
+  var hoje = new Date();
+  var diasPassados = 0, diasTotais = 0;
+  var totalDias = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
+  for (var d = 1; d <= totalDias; d++) {
+    var dia = new Date(hoje.getFullYear(), hoje.getMonth(), d).getDay();
+    if (dia !== 0 && dia !== 6) {
+      diasTotais++;
+      if (d <= hoje.getDate()) diasPassados++;
+    }
+  }
+  diasPassados = Math.max(1, diasPassados);
+  var porDia = real / diasPassados;
+  var projecao = porDia * diasTotais;
+  setTxt('desemp-proj-dia', 'R$ ' + Math.round(porDia).toLocaleString('pt-BR'));
+  setTxt('desemp-proj-fim', 'R$ ' + Math.round(projecao).toLocaleString('pt-BR'));
+  var diff = projecao - meta;
+  var txt = '';
+  if (meta <= 0) {
+    txt = 'Defina a meta para ver a projeção';
+  } else if (diff >= 0) {
+    txt = '✓ No ritmo atual, vai superar a meta em R$ ' + Math.round(diff).toLocaleString('pt-BR');
+  } else {
+    txt = '⚠ No ritmo atual, vai ficar R$ ' + Math.round(Math.abs(diff)).toLocaleString('pt-BR') + ' abaixo da meta';
+  }
+  setTxt('desemp-proj-txt', txt);
 }
 
 // ─── OPORTUNIDADES ────────────────────────────────────────────────────────────
@@ -1493,16 +1544,27 @@ function salvarConcorrentes() {
 // ─── SALVAR DESEMPENHO ────────────────────────────────────────────────────────
 function salvarDesempenho() {
   var cfg = sbConfig();
-  var real = document.getElementById('fat-real-input').value;
-  var meta = document.getElementById('fat-meta-input').value;
+  var real = parseFloat(document.getElementById('fat-real-input').value) || 0;
+  var meta = parseFloat(document.getElementById('fat-meta-input').value) || 0;
+  if (!meta) { alert('Informe a meta do mês antes de salvar.'); return; }
   lss('fat-real', real);
   lss('fat-meta', meta);
-  if (cfg.url && cfg.key && meta) {
+
+  // Gravar no histórico local
+  var historico = JSON.parse(localStorage.getItem('desemp-historico') || '[]');
+  var hoje = new Date();
+  var dataStr = hoje.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
+  // Atualizar entrada do dia ou adicionar nova
+  var idx = historico.findIndex(function(h){ return h.data === dataStr; });
+  if (idx >= 0) { historico[idx] = {data: dataStr, real: real, meta: meta}; }
+  else { historico.push({data: dataStr, real: real, meta: meta}); }
+  localStorage.setItem('desemp-historico', JSON.stringify(historico));
+
+  if (cfg.url && cfg.key) {
     sbPost('desempenho', {
       promotor: cfg.promotor, loja: cfg.loja,
-      mes_referencia: new Date().toISOString().slice(0,7),
-      meta_mensal: parseFloat(meta),
-      realizado: parseFloat(real)||0
+      mes_referencia: hoje.toISOString().slice(0,7),
+      meta_mensal: meta, realizado: real
     })
     .then(function(r){ alert(r.ok ? '✓ Desempenho salvo no banco!' : '✓ Salvo localmente.'); })
     .catch(function(){ alert('✓ Salvo localmente.'); });
@@ -1510,6 +1572,8 @@ function salvarDesempenho() {
     alert('✓ Desempenho salvo!');
   }
   calcMeta();
+  renderDesempHistorico();
+  calcProjecao(real, meta);
 }
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
@@ -1735,6 +1799,9 @@ function recarregarProdutos() {
   renderConcorrentes();
   renderSelectAvaria();
   renderDesempProdutos();
+  renderDesempHistorico();
+  var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
+  if(fr2||fm2) calcProjecao(fr2, fm2);
   atualizarHome();
 }
 
@@ -1908,6 +1975,9 @@ window.onload = function() {
   renderFotosExposicao();
   renderSelectAvaria();
   renderDesempProdutos();
+  renderDesempHistorico();
+  var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
+  if(fr2||fm2) calcProjecao(fr2, fm2);
   atualizarHome();
 };
 </script>
