@@ -733,8 +733,10 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
     <div class="card">
       <div class="ct">Supabase — banco de dados</div>
       <div class="field"><label>URL do projeto</label><input type="text" id="cfg-sb-url" placeholder="https://xxxx.supabase.co"></div>
-      <div class="field"><label>Chave anon</label><input type="password" id="cfg-sb-key" placeholder="eyJhbGci..."></div>
-      <button class="btn btn-p" onclick="salvarSupabase()">Salvar Supabase</button>
+      <div class="field"><label>Chave anon (eyJ... ou sb_publishable_...)</label><input type="text" id="cfg-sb-key" placeholder="Cole a chave aqui"></div>
+      <button class="btn btn-p" onclick="salvarSupabase()" style="margin-bottom:8px">Salvar Supabase</button>
+      <button class="btn btn-o" onclick="testarConexaoSupabase()">Testar conexão agora</button>
+      <div id="sb-teste-resultado" style="display:none;margin-top:10px;padding:10px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6"></div>
     </div>
   </div>
 </div>
@@ -1647,11 +1649,65 @@ function salvarPerfil(){
 }
 
 function salvarSupabase(){
-  var url=document.getElementById('cfg-sb-url').value.trim();
-  var key=document.getElementById('cfg-sb-key').value.trim();
-  if(!url||!key){alert('Preencha URL e chave.');return;}
-  lss('sb-url',url); lss('sb-key',key);
-  alert('✓ Supabase configurado!');
+  var url = document.getElementById('cfg-sb-url').value.trim();
+  var key = document.getElementById('cfg-sb-key').value.trim();
+  if (!url || !key) { alert('Preencha a URL e a chave.'); return; }
+  // Garantir que a URL não tem barra no final
+  url = url.replace(/\/+$/, '');
+  lss('sb-url', url);
+  lss('sb-key', key);
+  alert('✓ Supabase salvo! Toque em "Testar conexão agora" para verificar.');
+}
+
+function testarConexaoSupabase() {
+  var url = ls('sb-url');
+  var key = ls('sb-key');
+  var res = document.getElementById('sb-teste-resultado');
+  res.style.display = 'block';
+  res.style.background = 'var(--surface2)';
+  res.style.color = 'var(--text2)';
+  res.textContent = '⏳ Testando conexão...';
+
+  if (!url || !key) {
+    res.style.background = 'var(--red-bg)';
+    res.style.color = 'var(--red)';
+    res.textContent = '✕ URL ou chave não configurados. Preencha e salve primeiro.';
+    return;
+  }
+
+  // Testar fazendo uma leitura simples na tabela produtos
+  fetch(url + '/rest/v1/produtos?limit=1', {
+    method: 'GET',
+    headers: {
+      'apikey': key,
+      'Authorization': 'Bearer ' + key,
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(function(r) {
+    if (r.ok) {
+      res.style.background = 'var(--green-bg)';
+      res.style.color = 'var(--green)';
+      res.textContent = '✓ Conexão com Supabase funcionando! Os dados serão salvos no banco.';
+    } else {
+      r.text().then(function(t) {
+        res.style.background = 'var(--red-bg)';
+        res.style.color = 'var(--red)';
+        if (r.status === 401) {
+          res.textContent = '✕ Chave inválida (erro 401). Use a chave eyJ... da aba "Legacy anon" no Supabase.';
+        } else if (r.status === 404) {
+          res.textContent = '✕ URL incorreta (erro 404). Verifique a URL do projeto no Supabase → Settings → General.';
+        } else {
+          res.textContent = '✕ Erro ' + r.status + ': ' + t.slice(0, 150);
+        }
+      });
+    }
+  })
+  .catch(function(e) {
+    res.style.background = 'var(--red-bg)';
+    res.style.color = 'var(--red)';
+    res.textContent = '✕ Falha de rede: ' + e + '. Verifique sua internet.';
+  });
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
