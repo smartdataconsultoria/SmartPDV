@@ -1256,20 +1256,28 @@ function renderEstoque() {
     var gon  = estGondola[p.id] !== undefined ? estGondola[p.id] : '';
     var prp  = precoProp[p.id] || '';
 
-    // Badge: Crítico se sistema OU gôndola abaixo do mínimo, OK caso contrário
+    // Badge: usa sistema como referência; se sistema=0 ou vazio, usa gôndola
     var sisNum = sis !== '' ? parseInt(sis) : null;
     var gonNum = gon !== '' ? parseInt(gon) : null;
-    var abaixoMin = (sisNum !== null && sisNum < p.minimo) || (gonNum !== null && gonNum < p.minimo);
-    var statusCls = abaixoMin ? 'b-danger' : 'b-ok';
-    var statusTxt = abaixoMin ? 'Crítico' : 'OK';
-
-    var pct = (sisNum !== null && p.minimo > 0) ? Math.min(100, Math.round((sisNum/p.minimo)*100)) : 0;
-    var barColor = abaixoMin ? 'var(--red)' : 'var(--green)';
+    // Referência: sistema se preenchido e > 0, senão gôndola
+    var refQtd = (sisNum !== null && sisNum > 0) ? sisNum : gonNum;
+    var abaixoMin = refQtd !== null && refQtd < p.minimo;
+    var statusCls, statusTxt;
+    if (refQtd === null) {
+      statusCls = 'b-neutral'; statusTxt = 'Preencher';
+    } else if (abaixoMin) {
+      statusCls = 'b-danger'; statusTxt = 'Crítico';
+    } else {
+      statusCls = 'b-ok'; statusTxt = 'OK';
+    }
+    // Barra de progresso baseada na referência
+    var pct = (refQtd !== null && p.minimo > 0) ? Math.min(100, Math.round((refQtd/p.minimo)*100)) : 0;
+    var barColor = abaixoMin ? 'var(--red)' : (refQtd === null ? 'var(--border)' : 'var(--green)');
 
     html += '<div class="ei">' +
       '<div class="ei-head">' +
         '<div><div class="ei-nome">'+p.nome+'</div><div class="ei-sku">'+p.sku+' · Mín: '+p.minimo+' un</div></div>' +
-        '<span class="badge '+statusCls+'">'+statusTxt+'</span>' +
+        '<span class="badge '+statusCls+'" id="badge-status-'+p.id+'">'+statusTxt+'</span>' +
       '</div>' +
       '<div class="ei-cols">' +
         '<div class="ei-col">' +
@@ -1317,15 +1325,42 @@ function onGon(pid) {
 }
 function calcDif(pid) {
   var el = document.getElementById('dif-'+pid);
+  var p  = produtos.find(function(x){ return x.id===pid; });
   var sis = estSistema[pid];
   var gon = estGondola[pid];
-  if(sis===undefined && gon===undefined){el.textContent='— preencha os campos';el.className='dif-txt';return;}
-  if(sis===undefined){el.textContent='Gôndola: '+gon+' un (sem dado do sistema)';el.className='dif-txt';return;}
-  if(gon===undefined){el.textContent='Sistema: '+sis+' un (sem contagem física)';el.className='dif-txt';return;}
-  var d = gon-sis;
-  if(d===0){el.textContent='✓ Gôndola igual ao sistema ('+gon+' un)';el.className='dif-txt dif-ok';}
-  else if(d>0){el.textContent='▲ +'+d+' un a mais na gôndola vs sistema';el.className='dif-txt dif-warn';}
-  else{el.textContent='▼ '+d+' un a menos na gôndola vs sistema';el.className='dif-txt dif-danger';}
+
+  if (sis === undefined && gon === undefined) {
+    el.textContent = '— preencha os campos'; el.className = 'dif-txt'; return;
+  }
+
+  var sisNum = (sis !== undefined && sis !== '') ? parseInt(sis) : null;
+  var gonNum = (gon !== undefined && gon !== '') ? parseInt(gon) : null;
+
+  // Referência para verificar mínimo: sistema se > 0, senão gôndola
+  var refQtd = (sisNum !== null && sisNum > 0) ? sisNum : gonNum;
+  var minimo  = p ? p.minimo : 0;
+
+  // Mostrar diferença entre gôndola e sistema
+  if (sisNum !== null && gonNum !== null) {
+    var d = gonNum - sisNum;
+    if (d === 0) { el.textContent = '✓ Gôndola igual ao sistema ('+gonNum+' un)'; el.className = 'dif-txt dif-ok'; }
+    else if (d > 0) { el.textContent = '▲ +'+d+' un a mais na gôndola vs sistema'; el.className = 'dif-txt dif-warn'; }
+    else { el.textContent = '▼ '+Math.abs(d)+' un a menos na gôndola vs sistema'; el.className = 'dif-txt dif-danger'; }
+  } else if (sisNum !== null) {
+    el.textContent = 'Sistema: '+sisNum+' un (sem contagem física)'; el.className = 'dif-txt';
+  } else {
+    el.textContent = 'Gôndola: '+gonNum+' un (sem dado do sistema)'; el.className = 'dif-txt';
+  }
+
+  // Atualizar badge no cabeçalho do produto
+  var badgeEl = document.getElementById('badge-status-'+pid);
+  if (badgeEl && refQtd !== null && minimo > 0) {
+    if (refQtd < minimo) {
+      badgeEl.className = 'badge b-danger'; badgeEl.textContent = 'Crítico';
+    } else {
+      badgeEl.className = 'badge b-ok'; badgeEl.textContent = 'OK';
+    }
+  }
   atualizarHome();
 }
 function onPrecoP(pid) {
@@ -2053,7 +2088,7 @@ function addProduto() {
     }).then(function(r) {
       alert(r.ok ? '✓ Produto salvo no banco!' : '✓ Produto cadastrado localmente.');
     }).catch(function() {
-      alert('✓ Produto cadastrado!');
+      alert('✓ Cadastrado!');
     });
   } else {
     alert('✓ Produto cadastrado localmente!\n\nConfigure o Supabase em ⚙️ Config para salvar no banco.');
