@@ -790,6 +790,7 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
           <div class="field" style="margin:0"><label>SKU / Código</label><input type="text" id="np-sku" placeholder="SKU-001"></div>
           <div class="field" style="margin:0"><label>Estoque mínimo</label><input type="number" id="np-minimo" placeholder="20" inputmode="numeric"></div>
         </div>
+        <div class="field" style="margin-top:8px"><label>Fornecedor</label><input type="text" id="np-fornecedor" placeholder="Ex: Distribuidora ABC"></div>
         <div class="field" style="margin-top:8px"><label>Preço sugerido p/ venda (R$)</label><input type="text" id="np-preco" placeholder="0,00" inputmode="decimal"></div>
         <div class="field" style="margin-top:8px">
           <label>Lojas onde este produto é vendido</label>
@@ -1996,17 +1997,19 @@ function addProduto() {
   if (!nome) { alert('Informe o nome do produto.'); return; }
   if (!sku)  { alert('Informe o SKU/código.'); return; }
   if (isNaN(min)||min<1) { alert('Informe o estoque mínimo.'); return; }
-  // Coletar lojas selecionadas
-  var lojasCheck = document.querySelectorAll('#np-lojas-check input[type=checkbox]:checked');
+  // Coletar lojas selecionadas (novas divs clicáveis)
+  var lojasDivs = document.querySelectorAll('#np-lojas-check div[data-sel="1"]');
   var lojasSel = [];
-  lojasCheck.forEach(function(cb){ lojasSel.push(cb.dataset.loja); });
+  lojasDivs.forEach(function(d){ if(d.dataset.loja) lojasSel.push(d.dataset.loja); });
   if (!lojasSel.length) { alert('Selecione pelo menos uma loja para este produto.'); return; }
   var lista = carregarProdutos();
   if (lista.find(function(p){ return p.sku===sku; })) { alert('SKU já cadastrado.'); return; }
+  var fornecedor = document.getElementById('np-fornecedor') ? document.getElementById('np-fornecedor').value.trim() : '';
   var novoProduto = {
     id: 'p'+Date.now(),
     nome: nome, sku: sku, minimo: min,
     preco_sugerido: isNaN(preco)?0:preco,
+    fornecedor: fornecedor,
     lojas: lojasSel
   };
   lista.push(novoProduto);
@@ -2015,6 +2018,8 @@ function addProduto() {
   document.getElementById('np-sku').value='';
   document.getElementById('np-minimo').value='';
   document.getElementById('np-preco').value='';
+  var elForn = document.getElementById('np-fornecedor');
+  if (elForn) elForn.value='';
   renderCadastroProdutos();
   recarregarProdutos();
   // Salvar no Supabase com UPSERT — se SKU já existe, atualiza
@@ -2088,7 +2093,7 @@ function renderCadastroProdutos() {
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
         '<div style="flex:1">' +
           '<div style="font-size:13px;font-weight:600;color:var(--text)">' + p.nome + '</div>' +
-          '<div style="font-size:11px;color:var(--text3);margin-top:1px">' + p.sku + ' · Mín: ' + p.minimo + ' · Sugerido: R$ ' + p.preco_sugerido.toFixed(2).replace('.',',') + '</div>' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:1px">' + p.sku + (p.fornecedor?' · '+p.fornecedor:'') + ' · Mín: ' + p.minimo + ' · R$ ' + p.preco_sugerido.toFixed(2).replace('.',',') + '</div>' +
           '<div style="font-size:11px;margin-top:3px">🏪 ' + lojas + '</div>' +
         '</div>' +
         '<button data-id="' + p.id + '" onclick="removeProduto(this.dataset.id)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;margin-left:8px;flex-shrink:0">Remover</button>' +
@@ -2112,41 +2117,41 @@ function renderNpLojasCheck() {
     el.innerHTML = '<div style="font-size:12px;color:var(--text3);font-style:italic">Cadastre lojas em "Minhas lojas" para selecionar</div>';
     return;
   }
-  el.innerHTML = '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Selecione uma ou mais lojas:</div>' +
-    lojas.map(function(l) {
-      return '<label onclick="toggleLojaCheck(this)" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:2px solid var(--border);margin-bottom:6px;transition:all 0.15s" data-selecionado="false">' +
-        '<div style="width:22px;height:22px;border-radius:6px;border:2px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s" class="loja-check-box"></div>' +
+  el.innerHTML = '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Toque para selecionar uma ou mais lojas:</div>' +
+    lojas.map(function(l, idx) {
+      return '<div id="loja-opt-' + idx + '" data-loja="' + l.nome + '" data-sel="0" ' +
+        'onclick="toggleLojaOpt(this)" ' +
+        'style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;' +
+        'background:var(--bg);border-radius:var(--radius-sm);border:2px solid var(--border);' +
+        'margin-bottom:8px;transition:border-color 0.15s,background 0.15s;-webkit-tap-highlight-color:transparent">' +
+        '<div id="loja-box-' + idx + '" style="width:24px;height:24px;border-radius:6px;border:2px solid var(--border);' +
+        'background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:700;color:#000"></div>' +
         '<div>' +
-          '<div style="font-size:13px;font-weight:600;color:var(--text)">' + l.nome + '</div>' +
+          '<div style="font-size:14px;font-weight:600;color:var(--text)">' + l.nome + '</div>' +
           '<div style="font-size:11px;color:var(--text3)">' + (l.rede||'Outra') + (l.cidade?' · '+l.cidade:'') + '</div>' +
         '</div>' +
-        '<input type="checkbox" data-loja="' + l.nome + '" name="np-loja-check" style="display:none">' +
-      '</label>';
+      '</div>';
     }).join('');
 }
 
-function toggleLojaCheck(label) {
-  var sel = label.getAttribute('data-selecionado') === 'true';
-  var box = label.querySelector('.loja-check-box');
-  var inp = label.querySelector('input[type=checkbox]');
+function toggleLojaOpt(el) {
+  var sel = el.getAttribute('data-sel') === '1';
+  var idx = el.id.replace('loja-opt-','');
+  var box = document.getElementById('loja-box-' + idx);
   if (!sel) {
-    label.setAttribute('data-selecionado','true');
-    label.style.borderColor = 'var(--brand)';
-    label.style.background  = 'var(--brand-light)';
-    box.style.background    = 'var(--brand)';
-    box.style.borderColor   = 'var(--brand)';
-    box.innerHTML = '<span style="color:#000;font-size:13px;font-weight:700">✓</span>';
-    if (inp) inp.checked = true;
+    el.setAttribute('data-sel','1');
+    el.style.borderColor = 'var(--brand)';
+    el.style.background  = 'var(--brand-light)';
+    if (box) { box.style.background='var(--brand)'; box.style.borderColor='var(--brand)'; box.textContent='✓'; }
   } else {
-    label.setAttribute('data-selecionado','false');
-    label.style.borderColor = 'var(--border)';
-    label.style.background  = 'var(--bg)';
-    box.style.background    = 'var(--surface2)';
-    box.style.borderColor   = 'var(--border)';
-    box.innerHTML = '';
-    if (inp) inp.checked = false;
+    el.setAttribute('data-sel','0');
+    el.style.borderColor = 'var(--border)';
+    el.style.background  = 'var(--bg)';
+    if (box) { box.style.background='var(--surface2)'; box.style.borderColor='var(--border)'; box.textContent=''; }
   }
 }
+
+function toggleLojaCheck(label) { toggleLojaOpt(label); }
 
 // ─── CADASTRO DE CONCORRENTES ─────────────────────────────────────────────────
 function addConcorrente() {
