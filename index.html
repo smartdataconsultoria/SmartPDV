@@ -2195,40 +2195,53 @@ function renderCadastroConcorrentes() {
 }
 
 function sincronizarProdutos() {
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (!sbUrl || !sbKey) {
-    alert('Configure o Supabase em Config primeiro.');
-    return;
-  }
+  var sbUrl = SUPABASE_URL;
+  var sbKey = SUPABASE_KEY;
+  var token = ls('auth-token') || sbKey;
   var lista = carregarProdutos();
-  if (!lista.length) { alert('Nenhum produto cadastrado localmente.'); return; }
+  if (!lista.length) { alert('Nenhum produto cadastrado.'); return; }
 
-  // Primeiro apaga todos os produtos do banco com os SKUs locais
-  // Depois insere todos de novo sem duplicata
-  var skus = lista.map(function(p){ return p.sku; }).join(',');
-  fetch(sbUrl + '/rest/v1/produtos?sku=in.(' + encodeURIComponent(skus) + ')', {
-    method: 'DELETE',
-    headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
-  }).then(function() {
-    // Reinsere todos sem duplicata
-    return fetch(sbUrl + '/rest/v1/produtos', {
-      method: 'POST',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify(lista.map(function(p){
-        return { id: p.id, nome: p.nome, sku: p.sku, minimo: p.minimo, preco_sugerido: p.preco_sugerido };
-      }))
-    });
+  var payload = lista.map(function(p) {
+    return { id: p.id, nome: p.nome, sku: p.sku, minimo: p.minimo, preco_sugerido: p.preco_sugerido };
+  });
+
+  fetch(sbUrl + '/rest/v1/produtos', {
+    method: 'POST',
+    headers: {
+      'apikey': sbKey,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(payload)
   }).then(function(r) {
-    alert(r.ok
-      ? '✓ Banco sincronizado! ' + lista.length + ' produto(s) sem duplicatas.'
-      : '✕ Erro na sincronização.');
-  }).catch(function(e){ alert('Erro: ' + e); });
+    if (r.ok) {
+      // Sincronizar também os concorrentes
+      var concs = carregarConcorrentes();
+      if (concs.length) {
+        var concPayload = concs.map(function(c) {
+          return { id: c.id, produto_id: c.produto_id, empresa: c.empresa, produto_similar: c.produto_similar || c.similar || '' };
+        });
+        return fetch(sbUrl + '/rest/v1/concorrentes', {
+          method: 'POST',
+          headers: {
+            'apikey': sbKey,
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates,return=minimal'
+          },
+          body: JSON.stringify(concPayload)
+        }).then(function(r2) {
+          alert(r2.ok
+            ? '✓ Sincronizado! ' + lista.length + ' produto(s) e ' + concs.length + ' similar(es) enviados ao banco.'
+            : '✓ Produtos salvos. Erro ao salvar similares.');
+        });
+      }
+      alert('✓ ' + lista.length + ' produto(s) sincronizado(s) com o banco!');
+    } else {
+      r.text().then(function(t){ alert('Erro ao sincronizar: ' + t.slice(0,150)); });
+    }
+  }).catch(function(e){ alert('Erro de conexão: ' + e); });
 }
 
 function recarregarProdutos() {
