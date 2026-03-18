@@ -721,11 +721,17 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
 <div id="sc-config" class="screen">
   <div class="header">
     <div class="logo"><span style="color:#FCA311">Smart</span>PDV</div>
-    <div class="h-row"><div><div class="h-title">Configurações</div></div></div>
+    <div class="h-row"><div><div class="h-title">Configurações</div></div><button onclick="fazerLogout()" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--radius-sm);padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Sair</button></div>
   </div>
   <div class="sec">
     <div class="card">
-      <div class="ct">Meu perfil</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="ct" style="margin:0">Meu perfil</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--text3)" id="cfg-usuario-logado"></span>
+          <button onclick="fazerLogout()" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--radius-sm);padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">Sair</button>
+        </div>
+      </div>
       <div class="field"><label>Meu nome</label><input type="text" id="cfg-nome" placeholder="Seu nome completo"></div>
 
       <div style="height:1px;background:var(--border);margin:4px 0 12px"></div>
@@ -1215,6 +1221,9 @@ function syncLoja() {
   var nome = ls('promotor-nome')||'';
   var nomeEl = document.getElementById('home-promotor-nome');
   if (nomeEl) nomeEl.textContent = nome;
+  // Mostrar CPF logado no Config
+  var cpfEl = document.getElementById('cfg-usuario-logado');
+  if (cpfEl) cpfEl.textContent = ls('auth-cpf') || ls('auth-email') || '';
 }
 function ls(k){return localStorage.getItem(k);}
 function lss(k,v){localStorage.setItem(k,v);}
