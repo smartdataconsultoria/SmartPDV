@@ -894,10 +894,14 @@ function fazerLogin() {
       // Login OK — salvar token e dados do usuário
       lss('auth-token', res.data.access_token);
       lss('auth-email', email); lss('auth-cpf', email);
-      var nome = res.data.user && res.data.user.user_metadata && res.data.user.user_metadata.nome
-        ? res.data.user.user_metadata.nome
-        : email.split('@')[0];
-      lss('promotor-nome', ls('promotor-nome') || nome);
+      // Usar nome dos metadados se disponível, senão usar CPF formatado
+      var meta = res.data.user && res.data.user.user_metadata;
+      var nome = meta && meta.nome ? meta.nome : (meta && meta.full_name ? meta.full_name : '');
+      var cpfFormatado = email; // CPF já está formatado no campo
+      if (!ls('promotor-nome') || ls('promotor-nome') === cpfFormatado) {
+        if (nome) lss('promotor-nome', nome);
+      }
+      lss('auth-cpf', email);
       entrarNoApp();
     } else {
       errEl.textContent = res.data.error_description || res.data.msg || 'E-mail ou senha incorretos.';
@@ -1795,18 +1799,33 @@ function atualizarHomeConc() {
 // ─── SALVAR ───────────────────────────────────────────────────────────────────
 // ─── HELPER SUPABASE ─────────────────────────────────────────────────────────
 function sbPost(tabela, payload) {
-  var sbUrl = SUPABASE_URL || ls('sb-url');
-  var sbKey = SUPABASE_KEY || ls('sb-key');
-  if (!sbUrl || !sbKey) return Promise.resolve({ok:false});
+  var sbUrl = SUPABASE_URL;
+  var sbKey = SUPABASE_KEY;
+  // Usar token do usuário logado se disponível, senão usar anon key
+  var token = ls('auth-token') || sbKey;
   return fetch(sbUrl + '/rest/v1/' + tabela, {
     method: 'POST',
     headers: {
       'apikey': sbKey,
-      'Authorization': 'Bearer ' + sbKey,
+      'Authorization': 'Bearer ' + token,
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal'
     },
     body: JSON.stringify(payload)
+  });
+}
+
+function sbGet(tabela, query) {
+  var sbUrl = SUPABASE_URL;
+  var sbKey = SUPABASE_KEY;
+  var token = ls('auth-token') || sbKey;
+  return fetch(sbUrl + '/rest/v1/' + tabela + (query||''), {
+    method: 'GET',
+    headers: {
+      'apikey': sbKey,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    }
   });
 }
 
