@@ -276,10 +276,7 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
   </div>
 
   <div class="sec">
-    <!-- STATUS DO DIA — META + ESTOQUE -->
     <div class="card" style="padding:0;overflow:hidden">
-
-      <!-- LINHA 1: Meta mensal + venda diária necessária -->
       <div style="padding:14px 14px 10px;border-bottom:1px solid var(--border)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div class="ct" style="margin:0">Meta do mês</div>
@@ -298,12 +295,10 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
             <div class="metric-n" style="color:var(--green);font-size:16px" id="home-real-val">R$ —</div>
           </div>
         </div>
-        <!-- Barra de progresso da meta -->
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <div class="pbar" style="flex:1;margin:0"><div class="pfill" id="home-meta-bar" style="width:0%;background:var(--brand)"></div></div>
           <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--brand);min-width:32px;text-align:right" id="home-meta-pct">0%</span>
         </div>
-        <!-- Venda diária necessária -->
         <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:8px 12px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
           <div>
             <div style="font-size:10px;color:var(--text3)">Precisa vender por dia</div>
@@ -316,7 +311,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
         </div>
       </div>
 
-      <!-- LINHA 2: Valor de estoque disponível -->
       <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <div class="ct" style="margin:0">Estoque disponível</div>
@@ -336,7 +330,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
         </div>
       </div>
 
-      <!-- LINHA 3: Alertas rápidos -->
       <div style="padding:10px 14px">
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
           <div class="metric" style="padding:8px">
@@ -359,7 +352,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       </div>
     </div>
 
-    <!-- RESUMO DESEMPENHO -->
     <div class="res-card">
       <div class="res-card-head" onclick="navTo('desempenho')">
         <div class="res-card-title">📈 Desempenho</div>
@@ -377,7 +369,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       </div>
     </div>
 
-    <!-- RESUMO ESTOQUE -->
     <div class="res-card">
       <div class="res-card-head" onclick="navTo('estoque')">
         <div class="res-card-title">📦 Estoque & Preços</div>
@@ -388,7 +379,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       </div>
     </div>
 
-    <!-- RESUMO EXPOSIÇÃO -->
     <div class="res-card">
       <div class="res-card-head" onclick="navTo('exposicao')">
         <div class="res-card-title">🏪 Exposição</div>
@@ -403,7 +393,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       </div>
     </div>
 
-    <!-- RESUMO CONCORRENTES -->
     <div class="res-card">
       <div class="res-card-head" onclick="navTo('concorrentes')">
         <div class="res-card-title">🏁 Concorrentes</div>
@@ -414,7 +403,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       </div>
     </div>
 
-    <!-- RESUMO AVARIAS -->
     <div class="res-card">
       <div class="res-card-head" onclick="navTo('avarias')">
         <div class="res-card-title">⚠️ Avarias</div>
@@ -425,7 +413,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       </div>
     </div>
 
-    <!-- RESUMO OPORTUNIDADES -->
     <div class="res-card">
       <div class="res-card-head" onclick="navTo('oportunidades')">
         <div class="res-card-title">💡 Oportunidades</div>
@@ -494,12 +481,9 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       <div style="font-size:12px;color:var(--text2);margin-top:5px" id="exp-lbl">0 de 8 itens</div>
     </div>
 
-    <!-- FOTOS POR PRODUTO -->
     <div class="card">
       <div class="ct">Fotos da exposição</div>
-      <div id="fotos-lista">
-        <!-- gerado pelo JS -->
-      </div>
+      <div id="fotos-lista"></div>
       <button class="btn btn-o" onclick="addFotoExtra()" style="margin-top:8px;font-size:13px">+ Adicionar foto extra</button>
     </div>
 
@@ -588,7 +572,7 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       <button class="btn btn-p" onclick="addAvaria()">Registrar avaria</button>
     </div>
 
-    <div id="lista-av"><!-- gerado pelo JS --></div>
+    <div id="lista-av"></div>
   </div>
 </div>
 
@@ -604,7 +588,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
   </div>
 
   <div class="sec">
-    <!-- METAS DO MÊS -->
     <div class="card">
       <div class="ct">Faturamento do mês</div>
       <div class="metrics m2" style="margin-bottom:12px">
@@ -623,7 +606,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       </div>
     </div>
 
-    <!-- ATUALIZAR FATURAMENTO -->
     <div class="card">
       <div class="ct">Atualizar resultado</div>
       <div class="metrics m2" style="margin-bottom:10px">
@@ -639,17 +621,15 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       <button class="btn btn-p" onclick="salvarDesempenho()">Salvar desempenho</button>
     </div>
 
-    <!-- HISTÓRICO DE ATUALIZAÇÕES -->
     <div class="card">
       <div class="ct">Histórico de atualizações</div>
       <div id="desemp-historico">
         <div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">
-          Nenhuma atualização registrada ainda. Salve o desempenho para começar o histórico.
+          Nenhuma atualização registrada ainda.
         </div>
       </div>
     </div>
 
-    <!-- PROJEÇÃO DO MÊS -->
     <div class="card">
       <div class="ct">Projeção do mês</div>
       <div class="metrics m2">
@@ -714,7 +694,7 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       <button class="btn btn-p" onclick="addOportunidade()">Registrar oportunidade</button>
     </div>
 
-    <div id="lista-op"><!-- gerado pelo JS --></div>
+    <div id="lista-op"></div>
   </div>
 </div>
 
@@ -780,9 +760,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       <button class="btn btn-p" style="margin-top:12px" onclick="salvarPerfil()">Salvar perfil e meta</button>
     </div>
 
-
-
-    <!-- CADASTRO DE PRODUTOS -->
     <div class="card">
       <div class="ct">Cadastro de produtos</div>
       <div class="ibox ibox-blue" style="margin:0 0 12px">Cadastre os produtos que o promotor deve acompanhar. Eles aparecerão em Estoque, Exposição, Avarias e Concorrentes.</div>
@@ -807,7 +784,6 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       <div id="lista-produtos-cfg"></div>
     </div>
 
-    <!-- CADASTRO SIMILARES CONCORRENTES -->
     <div class="card">
       <div class="ct">Produtos similares — concorrentes</div>
       <div class="ibox ibox-blue" style="margin:0 0 12px">Para cada produto seu, cadastre o similar do concorrente que o promotor deve pesquisar o preço.</div>
@@ -822,37 +798,27 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
       </div>
       <div id="lista-conc-cfg"></div>
     </div>
-
-    
   </div>
 </div>
 
 <!-- NAV INFERIOR -->
 <nav class="nav" id="main-nav" style="display:none">
   <button class="ni" id="ni-home"        onclick="navTo('home')">        <span class="ni-icon">🏠</span>Início</button>
-  <button class="ni"        id="ni-estoque"      onclick="navTo('estoque')">     <span class="ni-icon">📦</span>Estoque</button>
-  <button class="ni"        id="ni-exposicao"    onclick="navTo('exposicao')">   <span class="ni-icon">🏪</span>Exposição</button>
-  <button class="ni"        id="ni-concorrentes" onclick="navTo('concorrentes')"><span class="ni-icon">🏁</span>Concorr.</button>
-  <button class="ni"        id="ni-avarias"      onclick="navTo('avarias')">     <span class="ni-icon">⚠️</span>Avarias</button>
-  <button class="ni"        id="ni-oportunidades" onclick="navTo('oportunidades')"><span class="ni-icon">💡</span>Oprtun.</button>
-  <button class="ni"        id="ni-config"       onclick="navTo('config')">      <span class="ni-icon">⚙️</span>Config</button>
+  <button class="ni" id="ni-estoque"     onclick="navTo('estoque')">     <span class="ni-icon">📦</span>Estoque</button>
+  <button class="ni" id="ni-exposicao"   onclick="navTo('exposicao')">   <span class="ni-icon">🏪</span>Exposição</button>
+  <button class="ni" id="ni-concorrentes" onclick="navTo('concorrentes')"><span class="ni-icon">🏁</span>Concorr.</button>
+  <button class="ni" id="ni-avarias"     onclick="navTo('avarias')">     <span class="ni-icon">⚠️</span>Avarias</button>
+  <button class="ni" id="ni-oportunidades" onclick="navTo('oportunidades')"><span class="ni-icon">💡</span>Oprtun.</button>
+  <button class="ni" id="ni-config"      onclick="navTo('config')">      <span class="ni-icon">⚙️</span>Config</button>
 </nav>
 
 <script>
 
 // ─── AUTENTICAÇÃO ────────────────────────────────────────────────────────────
-// Credenciais Supabase — fixas no código
 var SUPABASE_URL = 'https://tnaasnshthzyvbfxxerg.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuYWFzbnNodGh6eXZiZnh4ZXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1MzM0NjgsImV4cCI6MjA4OTEwOTQ2OH0.8iYQ6kAhNrtucanFCPfYrwNN18YmFeQ8JfwGPRUZxs4';
 
-function initSupabase() {
-  // Credenciais já embutidas — não precisa de configuração manual
-  SUPABASE_URL = SUPABASE_URL || ls('sb-url') || '';
-  SUPABASE_KEY = SUPABASE_KEY || ls('sb-key') || '';
-}
-
 function cpfParaEmail(cpf) {
-  // Converte CPF em e-mail interno para o Supabase Auth
   var limpo = cpf.replace(/\D/g,'');
   return limpo + '@smartpdv.app';
 }
@@ -908,12 +874,6 @@ function fazerLogin() {
   });
 }
 
-
-
-
-
-
-
 function mostrarErroLogin(msg) {
   var el = document.getElementById('login-error');
   if (el) { el.textContent = msg; el.style.display = 'block'; }
@@ -930,7 +890,6 @@ function entrarNoApp() {
 }
 
 function verificarSessao() {
-  // Autenticação via banco — verifica se tem sessão local válida
   var cpf  = ls('auth-cpf');
   var nome = ls('promotor-nome');
   if (cpf && nome) {
@@ -980,7 +939,6 @@ window.onload = function() {
 };
 
 // ─── DADOS DE PRODUTOS ───────────────────────────────────────────────────────
-// Produtos carregados do localStorage (cadastrados em Config)
 function carregarProdutos() {
   var raw = localStorage.getItem('cadastro-produtos');
   if (raw) { try { return JSON.parse(raw); } catch(e){} }
@@ -995,7 +953,6 @@ function getProdutos() {
   var lojaAtiva = ls('promotor-loja') || '';
   var prods = carregarProdutos();
   var concs = carregarConcorrentes();
-  // Filtrar apenas produtos desta loja (se produto não tem lojas = mostra em todas)
   var filtrados = prods.filter(function(p) {
     if (!p.lojas || !p.lojas.length) return true;
     return p.lojas.indexOf(lojaAtiva) !== -1;
@@ -1010,25 +967,15 @@ function getProdutos() {
 }
 var produtos = [];
 
-// Estado da sessão
-
 // ─── CHAVE POR LOJA ───────────────────────────────────────────────────────────
 function lojaKey(suffix) {
   var loja = ls('promotor-loja') || 'default';
   return 'loja:' + loja + ':' + suffix;
 }
-function lsLoja(suffix) {
-  return localStorage.getItem(lojaKey(suffix));
-}
-function lssLoja(suffix, val) {
-  localStorage.setItem(lojaKey(suffix), val);
-}
-function lsLojaObj(suffix) {
-  try { return JSON.parse(lsLoja(suffix) || 'null'); } catch(e){ return null; }
-}
-function lssLojaObj(suffix, obj) {
-  lssLoja(suffix, JSON.stringify(obj));
-}
+function lsLoja(suffix) { return localStorage.getItem(lojaKey(suffix)); }
+function lssLoja(suffix, val) { localStorage.setItem(lojaKey(suffix), val); }
+function lsLojaObj(suffix) { try { return JSON.parse(lsLoja(suffix) || 'null'); } catch(e){ return null; } }
+function lssLojaObj(suffix, obj) { lssLoja(suffix, JSON.stringify(obj)); }
 
 var estSistema  = {};
 var estGondola  = {};
@@ -1038,7 +985,6 @@ var avarias     = [];
 var oportunidades = [];
 var expoChecks  = 0;
 
-// ─── CARREGAR/SALVAR ESTADO POR LOJA ─────────────────────────────────────────
 function carregarEstadoLoja() {
   var est = lsLojaObj('estoque') || {};
   estSistema = est.sistema || {};
@@ -1049,7 +995,6 @@ function carregarEstadoLoja() {
   oportunidades = lsLojaObj('oportunidades') || [];
   expoChecks = parseInt(lsLoja('expo-checks') || '0');
 
-  // Carregar meta da loja — limpar campos primeiro para evitar valores da loja anterior
   var fr = lsLoja('fat-real') || '';
   var fm = lsLoja('fat-meta') || '';
   var elR = document.getElementById('fat-real-input');
@@ -1069,7 +1014,7 @@ function salvarEstadoLoja() {
   lssLojaObj('oportunidades', oportunidades);
   lssLoja('expo-checks', expoChecks);
 }
-var expoTotal   = 8;
+var expoTotal = 8;
 
 // ─── CLOCK ───────────────────────────────────────────────────────────────────
 function tick() {
@@ -1084,7 +1029,6 @@ function tick() {
 function setTxt(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
 tick(); setInterval(tick,30000);
 
-
 // ─── LOJAS MÚLTIPLAS ──────────────────────────────────────────────────────────
 function carregarLojas() {
   try { return JSON.parse(localStorage.getItem('minhas-lojas') || '[]'); } catch(e){ return []; }
@@ -1096,14 +1040,13 @@ function addLoja() {
   var cidade = document.getElementById('nova-loja-cidade').value.trim();
   if (!nome) { alert('Informe o nome da loja.'); return; }
   var lista = carregarLojas();
-  if (lista.length >= 5) { alert('Limite de 5 lojas atingido. Remova uma antes de adicionar.'); return; }
+  if (lista.length >= 5) { alert('Limite de 5 lojas atingido.'); return; }
   if (lista.find(function(l){ return l.nome === nome; })) { alert('Loja já cadastrada.'); return; }
   lista.push({ id: 'l'+Date.now(), nome: nome, rede: rede, cidade: cidade });
   localStorage.setItem('minhas-lojas', JSON.stringify(lista));
   document.getElementById('nova-loja-nome').value = '';
   document.getElementById('nova-loja-rede').value = '';
   document.getElementById('nova-loja-cidade').value = '';
-  // Se for a primeira loja, definir como ativa
   if (lista.length === 1) {
     lss('promotor-loja', nome);
     lss('promotor-rede', rede);
@@ -1117,7 +1060,6 @@ function addLoja() {
 function removerLoja(id) {
   var lista = carregarLojas().filter(function(l){ return l.id !== id; });
   localStorage.setItem('minhas-lojas', JSON.stringify(lista));
-  // Se era a loja ativa, limpar
   renderLojas();
   syncLoja();
 }
@@ -1151,18 +1093,14 @@ function selecionarLoja(id) {
   var lista = carregarLojas();
   var loja = lista.find(function(l){ return l.id === id; });
   if (!loja) return;
-  // Salvar estado da loja atual antes de trocar
   salvarEstadoLoja();
   lss('promotor-loja', loja.nome);
   lss('promotor-rede', loja.rede || '');
   lss('promotor-cidade', loja.cidade || '');
-  // Limpar estado em memória
   estSistema={}; estGondola={}; precoProp={}; precoConc={};
   avarias=[]; oportunidades=[]; expoChecks=0;
   document.querySelectorAll('#sc-exposicao .cb').forEach(function(cb){ cb.classList.remove('on'); });
   var obsExp = document.getElementById('obs-exp'); if (obsExp) obsExp.value='';
-  var fprev = document.getElementById('foto-preview');
-  if (fprev) { fprev.style.display='none'; fprev.innerHTML=''; }
   var fill = document.getElementById('exp-fill'); if (fill) fill.style.width='0%';
   setTxt('exp-pct','0%'); setTxt('exp-lbl','0 de 8 itens');
   carregarEstadoLoja();
@@ -1185,10 +1123,7 @@ function abrirSeletorLoja() {
   var seletor = document.getElementById('seletor-lojas');
   if (!seletor) return;
   if (seletor.style.display !== 'none') { fecharSeletorLoja(); return; }
-  if (!lista.length) {
-    alert('Cadastre suas lojas em ⚙️ Config primeiro.');
-    return;
-  }
+  if (!lista.length) { alert('Cadastre suas lojas em ⚙️ Config primeiro.'); return; }
   var ativa = ls('promotor-loja') || '';
   seletor.innerHTML = lista.map(function(l) {
     var isAtiva = l.nome === ativa;
@@ -1218,7 +1153,6 @@ function syncLoja() {
   var nome = ls('promotor-nome')||'';
   var nomeEl = document.getElementById('home-promotor-nome');
   if (nomeEl) nomeEl.textContent = nome;
-  // Mostrar CPF logado no Config
   var cpfEl = document.getElementById('cfg-usuario-logado');
   if (cpfEl) cpfEl.textContent = ls('auth-cpf') || ls('auth-email') || '';
 }
@@ -1232,7 +1166,6 @@ function navTo(name) {
   document.getElementById('sc-'+name).classList.add('active');
   document.getElementById('ni-'+name).classList.add('active');
   window.scrollTo(0,0);
-  // Ao entrar em Config, atualizar listas e selects
   if (name === 'config') {
     renderCadastroProdutos();
     renderCadastroConcorrentes();
@@ -1253,21 +1186,14 @@ function renderEstoque() {
     var gon  = estGondola[p.id] !== undefined ? estGondola[p.id] : '';
     var prp  = precoProp[p.id] || '';
 
-    // Badge: usa sistema como referência; se sistema=0 ou vazio, usa gôndola
     var sisNum = sis !== '' ? parseInt(sis) : null;
     var gonNum = gon !== '' ? parseInt(gon) : null;
-    // Referência: sistema se preenchido e > 0, senão gôndola
     var refQtd = (sisNum !== null && sisNum > 0) ? sisNum : gonNum;
     var abaixoMin = refQtd !== null && refQtd < p.minimo;
     var statusCls, statusTxt;
-    if (refQtd === null) {
-      statusCls = 'b-neutral'; statusTxt = 'Preencher';
-    } else if (abaixoMin) {
-      statusCls = 'b-danger'; statusTxt = 'Crítico';
-    } else {
-      statusCls = 'b-ok'; statusTxt = 'OK';
-    }
-    // Barra de progresso baseada na referência
+    if (refQtd === null) { statusCls = 'b-neutral'; statusTxt = 'Preencher'; }
+    else if (abaixoMin) { statusCls = 'b-danger'; statusTxt = 'Crítico'; }
+    else { statusCls = 'b-ok'; statusTxt = 'OK'; }
     var pct = (refQtd !== null && p.minimo > 0) ? Math.min(100, Math.round((refQtd/p.minimo)*100)) : 0;
     var barColor = abaixoMin ? 'var(--red)' : (refQtd === null ? 'var(--border)' : 'var(--green)');
 
@@ -1279,14 +1205,14 @@ function renderEstoque() {
       '<div class="ei-cols">' +
         '<div class="ei-col">' +
           '<div class="ei-col-lbl">📊 Sist. empresa</div>' +
-          '<input class="fis-input" type="number" inputmode="numeric" placeholder="—" id="sis-'+p.id+'" value="'+sis+'" data-sid="'+ p.id +'" oninput="onSis(this.dataset.sid)"">' +
+          '<input class="fis-input" type="number" inputmode="numeric" placeholder="—" id="sis-'+p.id+'" value="'+sis+'" data-sid="'+ p.id +'" oninput="onSis(this.dataset.sid)">' +
           '<div class="sys-sub" style="margin-top:3px">Ref: '+p.minimo+' (mínimo)</div>' +
           '<div class="pbar" style="margin-top:6px"><div class="pfill" style="width:'+pct+'%;background:'+barColor+'"></div></div>' +
           '<div style="font-size:10px;color:var(--text3);margin-top:2px">'+pct+'% do mínimo</div>' +
         '</div>' +
         '<div class="ei-col">' +
           '<div class="ei-col-lbl">🖐 Ponta gôndola</div>' +
-          '<input class="fis-input" type="number" inputmode="numeric" placeholder="0" id="gon-'+p.id+'" value="'+gon+'" data-gid="'+ p.id +'" oninput="onGon(this.dataset.gid)"">' +
+          '<input class="fis-input" type="number" inputmode="numeric" placeholder="0" id="gon-'+p.id+'" value="'+gon+'" data-gid="'+ p.id +'" oninput="onGon(this.dataset.gid)">' +
           '<div class="sys-sub" style="margin-top:3px">unidades contadas</div>' +
         '</div>' +
       '</div>' +
@@ -1299,7 +1225,7 @@ function renderEstoque() {
           '<div style="font-size:10px;color:var(--text3)">Sugerido: R$ '+p.preco_sugerido.toFixed(2).replace('.',',')+'</div>' +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
-          '<input class="preco-mini" type="text" inputmode="decimal" placeholder="0,00" id="pp-'+p.id+'" value="'+prp+'" data-ppid="'+ p.id +'" oninput="onPrecoP(this.dataset.ppid)"">' +
+          '<input class="preco-mini" type="text" inputmode="decimal" placeholder="0,00" id="pp-'+p.id+'" value="'+prp+'" data-ppid="'+ p.id +'" oninput="onPrecoP(this.dataset.ppid)">' +
           '<span class="badge" id="ppb-'+p.id+'" style="font-size:10px">—</span>' +
         '</div>' +
       '</div>' +
@@ -1332,12 +1258,9 @@ function calcDif(pid) {
 
   var sisNum = (sis !== undefined && sis !== '') ? parseInt(sis) : null;
   var gonNum = (gon !== undefined && gon !== '') ? parseInt(gon) : null;
-
-  // Referência para verificar mínimo: sistema se > 0, senão gôndola
   var refQtd = (sisNum !== null && sisNum > 0) ? sisNum : gonNum;
   var minimo  = p ? p.minimo : 0;
 
-  // Mostrar diferença entre gôndola e sistema
   if (sisNum !== null && gonNum !== null) {
     var d = gonNum - sisNum;
     if (d === 0) { el.textContent = '✓ Gôndola igual ao sistema ('+gonNum+' un)'; el.className = 'dif-txt dif-ok'; }
@@ -1349,14 +1272,10 @@ function calcDif(pid) {
     el.textContent = 'Gôndola: '+gonNum+' un (sem dado do sistema)'; el.className = 'dif-txt';
   }
 
-  // Atualizar badge no cabeçalho do produto
   var badgeEl = document.getElementById('badge-status-'+pid);
   if (badgeEl && refQtd !== null && minimo > 0) {
-    if (refQtd < minimo) {
-      badgeEl.className = 'badge b-danger'; badgeEl.textContent = 'Crítico';
-    } else {
-      badgeEl.className = 'badge b-ok'; badgeEl.textContent = 'OK';
-    }
+    if (refQtd < minimo) { badgeEl.className = 'badge b-danger'; badgeEl.textContent = 'Crítico'; }
+    else { badgeEl.className = 'badge b-ok'; badgeEl.textContent = 'OK'; }
   }
   atualizarHome();
 }
@@ -1433,16 +1352,11 @@ function abrirInputConc(pid) {
   var p = produtos.find(function(x){ return x.id===pid; });
   var nome = p ? p.nome : 'produto';
   var valor = prompt('Preço do concorrente\n' + nome + '\n\nDigite o valor (ex: 29,90):', atual);
-  if (valor === null) return; // cancelou
+  if (valor === null) return;
   valor = valor.trim().replace(',','.');
   var num = parseFloat(valor);
   if (valor !== '' && isNaN(num)) { alert('Valor inválido. Use números, ex: 29.90'); return; }
   precoConc[pid] = valor !== '' ? num.toFixed(2).replace('.',',') : '';
-  renderConcorrentes();
-}
-
-function onConc(pid) {
-  precoConc[pid] = document.getElementById('conc-'+pid).value;
   renderConcorrentes();
 }
 
@@ -1489,12 +1403,7 @@ function addFotoExtra() {
   var el = document.getElementById('fotos-lista');
   var div = document.createElement('div');
   div.style.marginBottom='10px';
-  div.innerHTML = '<div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px">Foto extra</div>' +
-    '<label style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:10px;cursor:pointer;color:var(--text2);font-size:12px">' +
-      '📷 Foto extra' +
-      '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="prevFotoInline(this)">' +
-    '</label>' +
-    '<div class="foto-prev-inline" style="display:none;margin-top:6px"></div>';
+  div.innerHTML = '<label style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:10px;cursor:pointer;color:var(--text2);font-size:12px">📷 Foto extra<input type="file" accept="image/*" capture="environment" style="display:none" onchange="prevFotoInline(this)"></label><div class="foto-prev-inline" style="display:none;margin-top:6px"></div>';
   el.appendChild(div);
   setTimeout(function(){div.querySelector('input').click();},100);
 }
@@ -1556,15 +1465,8 @@ function renderAvarias() {
   var html = '<div class="card"><div class="ct">Avarias registradas hoje ('+avarias.length+')</div>';
   avarias.forEach(function(av,i){
     html += '<div class="av-item">' +
-      '<div class="av-head">' +
-        '<div class="av-nome">'+av.produto+'</div>' +
-        '<button class="av-remove" onclick="removeAvaria('+i+')">✕</button>' +
-      '</div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:6px">' +
-        '<span class="badge b-danger">'+av.qty+' un</span>' +
-        '<span class="badge b-warn">'+av.tipo+'</span>' +
-        '<span class="badge b-neutral" style="font-size:10px">'+av.hora+'</span>' +
-      '</div>' +
+      '<div class="av-head"><div class="av-nome">'+av.produto+'</div><button class="av-remove" onclick="removeAvaria('+i+')">✕</button></div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:6px"><span class="badge b-danger">'+av.qty+' un</span><span class="badge b-warn">'+av.tipo+'</span><span class="badge b-neutral" style="font-size:10px">'+av.hora+'</span></div>' +
       (av.obs?'<div style="font-size:12px;color:var(--text2)">'+av.obs+'</div>':'') +
     '</div>';
   });
@@ -1581,7 +1483,6 @@ function calcMeta() {
   var pct  = meta > 0 ? Math.min(100, Math.round((real / meta) * 100)) : 0;
   var falta = Math.max(0, meta - real);
 
-  // Calcular dias úteis restantes no mês
   var hoje = new Date();
   var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
   var diasRestantes = 0;
@@ -1590,10 +1491,8 @@ function calcMeta() {
     if (dia !== 0 && dia !== 6) diasRestantes++;
   }
   diasRestantes = Math.max(1, diasRestantes);
-
   var vendaDiaria = diasRestantes > 0 ? Math.ceil(falta / diasRestantes) : falta;
 
-  // Calcular valor de estoque (qtd gôndola × preço sugerido)
   var totalEstoqueValor = 0;
   var totalUnidades = 0;
   produtos.forEach(function(p) {
@@ -1603,72 +1502,42 @@ function calcMeta() {
     totalUnidades += qtd;
   });
 
-  // Quantos dias de meta o estoque cobre
   var diasCobre = vendaDiaria > 0 ? Math.floor(totalEstoqueValor / vendaDiaria) : 0;
 
-  // Atualizar tela home
   setTxt('home-meta-val', 'R$ ' + meta.toLocaleString('pt-BR', {minimumFractionDigits:0}));
   setTxt('home-real-val', 'R$ ' + real.toLocaleString('pt-BR', {minimumFractionDigits:0}));
   setTxt('home-meta-pct', pct + '%');
   setTxt('home-meta-dia', 'R$ ' + vendaDiaria.toLocaleString('pt-BR', {minimumFractionDigits:0}));
   setTxt('home-meta-falta', 'R$ ' + falta.toLocaleString('pt-BR', {minimumFractionDigits:0}));
   setTxt('home-dias-restantes', diasRestantes + ' dias úteis restantes');
-
-  // Estoque
   setTxt('home-est-valor', 'R$ ' + Math.round(totalEstoqueValor).toLocaleString('pt-BR'));
   setTxt('home-est-unidades', totalUnidades + ' unidades');
 
-  // Cobre a meta?
   var cobreEl = document.getElementById('home-est-cobre');
   var diasEl  = document.getElementById('home-est-dias-cobre');
   if (cobreEl) {
-    if (vendaDiaria <= 0) {
-      cobreEl.textContent = '—';
-      cobreEl.style.color = 'var(--text3)';
-      if (diasEl) diasEl.textContent = 'Defina a meta';
-    } else if (totalEstoqueValor >= falta) {
-      cobreEl.textContent = '✓ Sim';
-      cobreEl.style.color = 'var(--green)';
-      if (diasEl) diasEl.textContent = 'Estoque suficiente!';
-    } else if (diasCobre >= 3) {
-      cobreEl.textContent = diasCobre + ' dias';
-      cobreEl.style.color = 'var(--amber)';
-      if (diasEl) diasEl.textContent = 'Reposição necessária';
-    } else {
-      cobreEl.textContent = '⚠ ' + diasCobre + ' dia' + (diasCobre === 1 ? '' : 's');
-      cobreEl.style.color = 'var(--red)';
-      if (diasEl) diasEl.textContent = 'Estoque crítico!';
-    }
+    if (vendaDiaria <= 0) { cobreEl.textContent = '—'; cobreEl.style.color = 'var(--text3)'; if (diasEl) diasEl.textContent = 'Defina a meta'; }
+    else if (totalEstoqueValor >= falta) { cobreEl.textContent = '✓ Sim'; cobreEl.style.color = 'var(--green)'; if (diasEl) diasEl.textContent = 'Estoque suficiente!'; }
+    else if (diasCobre >= 3) { cobreEl.textContent = diasCobre + ' dias'; cobreEl.style.color = 'var(--amber)'; if (diasEl) diasEl.textContent = 'Reposição necessária'; }
+    else { cobreEl.textContent = '⚠ ' + diasCobre + ' dia' + (diasCobre === 1 ? '' : 's'); cobreEl.style.color = 'var(--red)'; if (diasEl) diasEl.textContent = 'Estoque crítico!'; }
   }
 
   var barEl = document.getElementById('home-meta-bar');
-  if (barEl) {
-    barEl.style.width = pct + '%';
-    barEl.style.background = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--brand)';
-  }
+  if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--brand)'; }
 
-  // Atualizar tela desempenho
   setTxt('desemp-real', 'R$ ' + real.toLocaleString('pt-BR', {minimumFractionDigits:0}));
   setTxt('desemp-meta', 'R$ ' + meta.toLocaleString('pt-BR', {minimumFractionDigits:0}));
   setTxt('desemp-pct-lbl', pct + '% da meta atingida');
   setTxt('desemp-falta', 'Falta: R$ ' + falta.toLocaleString('pt-BR', {minimumFractionDigits:0}));
   var bar2 = document.getElementById('desemp-bar');
-  if (bar2) {
-    bar2.style.width = pct + '%';
-    bar2.style.background = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--brand)';
-  }
+  if (bar2) { bar2.style.width = pct + '%'; bar2.style.background = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--brand)'; }
   setTxt('home-fat-pct', pct + '%');
   setTxt('home-fat-real', 'R$ ' + real.toLocaleString('pt-BR', {minimumFractionDigits:0}));
   setTxt('home-fat-meta', 'R$ ' + meta.toLocaleString('pt-BR', {minimumFractionDigits:0}));
   var hbar = document.getElementById('home-fat-bar');
   if (hbar) hbar.style.width = pct + '%';
-  // Atualizar projeção se tela de desempenho estiver visível
   calcProjecao(real, meta);
   renderDesempHistorico();
-}
-
-function renderDesempProdutos() {
-  // Função mantida para compatibilidade — não exibe mais dados simulados
 }
 
 function renderDesempHistorico() {
@@ -1685,25 +1554,19 @@ function renderDesempHistorico() {
     return '<div class="res-row">' +
       '<div><div style="font-size:13px;color:var(--text)">' + h.data + '</div>' +
       '<div style="font-size:11px;color:var(--text3)">Meta: R$ ' + Number(h.meta).toLocaleString('pt-BR') + '</div></div>' +
-      '<div style="text-align:right">' +
-        '<div style="font-size:13px;font-weight:600;color:var(--text)">R$ ' + Number(h.real).toLocaleString('pt-BR') + '</div>' +
-        '<span class="badge ' + cls + '" style="font-size:10px">' + pct + '%</span>' +
-      '</div>' +
+      '<div style="text-align:right"><div style="font-size:13px;font-weight:600;color:var(--text)">R$ ' + Number(h.real).toLocaleString('pt-BR') + '</div>' +
+      '<span class="badge ' + cls + '" style="font-size:10px">' + pct + '%</span></div>' +
     '</div>';
   }).join('');
 }
 
 function calcProjecao(real, meta) {
-  // Calcular dias úteis passados e totais no mês
   var hoje = new Date();
   var diasPassados = 0, diasTotais = 0;
   var totalDias = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
   for (var d = 1; d <= totalDias; d++) {
     var dia = new Date(hoje.getFullYear(), hoje.getMonth(), d).getDay();
-    if (dia !== 0 && dia !== 6) {
-      diasTotais++;
-      if (d <= hoje.getDate()) diasPassados++;
-    }
+    if (dia !== 0 && dia !== 6) { diasTotais++; if (d <= hoje.getDate()) diasPassados++; }
   }
   diasPassados = Math.max(1, diasPassados);
   var porDia = real / diasPassados;
@@ -1711,14 +1574,9 @@ function calcProjecao(real, meta) {
   setTxt('desemp-proj-dia', 'R$ ' + Math.round(porDia).toLocaleString('pt-BR'));
   setTxt('desemp-proj-fim', 'R$ ' + Math.round(projecao).toLocaleString('pt-BR'));
   var diff = projecao - meta;
-  var txt = '';
-  if (meta <= 0) {
-    txt = 'Defina a meta para ver a projeção';
-  } else if (diff >= 0) {
-    txt = '✓ No ritmo atual, vai superar a meta em R$ ' + Math.round(diff).toLocaleString('pt-BR');
-  } else {
-    txt = '⚠ No ritmo atual, vai ficar R$ ' + Math.round(Math.abs(diff)).toLocaleString('pt-BR') + ' abaixo da meta';
-  }
+  var txt = meta <= 0 ? 'Defina a meta para ver a projeção' :
+    diff >= 0 ? '✓ No ritmo atual, vai superar a meta em R$ ' + Math.round(diff).toLocaleString('pt-BR') :
+    '⚠ No ritmo atual, vai ficar R$ ' + Math.round(Math.abs(diff)).toLocaleString('pt-BR') + ' abaixo da meta';
   setTxt('desemp-proj-txt', txt);
 }
 
@@ -1748,13 +1606,9 @@ function renderOportunidades() {
   oportunidades.forEach(function(op,i){
     html += '<div class="op-item">' +
       '<div class="op-text">' +
-        '<div style="display:flex;gap:6px;margin-bottom:4px">' +
-          '<span class="badge b-blue" style="font-size:10px">'+op.tipo+'</span>' +
-          '<span class="badge '+prioCls[op.prio]+'" style="font-size:10px">'+prioTxt[op.prio]+'</span>' +
-        '</div>' +
+        '<div style="display:flex;gap:6px;margin-bottom:4px"><span class="badge b-blue" style="font-size:10px">'+op.tipo+'</span><span class="badge '+prioCls[op.prio]+'" style="font-size:10px">'+prioTxt[op.prio]+'</span></div>' +
         (op.produto?'<div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:3px">'+op.produto+'</div>':'') +
-        '<div>'+op.desc+'</div>' +
-        '<div class="op-sub">'+op.hora+'</div>' +
+        '<div>'+op.desc+'</div><div class="op-sub">'+op.hora+'</div>' +
       '</div>' +
       '<button class="op-remove" onclick="removeOp('+i+')">✕</button>' +
     '</div>';
@@ -1767,7 +1621,6 @@ function removeOp(i){oportunidades.splice(i,1);renderOportunidades();atualizarHo
 
 // ─── ATUALIZAR HOME ────────────────────────────────────────────────────────────
 function atualizarHome() {
-  // Estoque alertas
   var alerts = 0;
   produtos.forEach(function(p){
     var g = estGondola[p.id]!==undefined?estGondola[p.id]:p.sistema.gondola;
@@ -1783,32 +1636,27 @@ function atualizarHome() {
   setTxt('home-expo-txt', expoChecks+' de '+expoTotal+' itens do checklist');
   setTxt('home-op', oportunidades.length);
 
-  // Resumo estoque no home
   var estHtml = '';
   produtos.forEach(function(p){
     var g = estGondola[p.id];
     var s = estSistema[p.id];
     if(g===undefined && s===undefined) return;
     var cls = (g!==undefined&&g<p.minimo)?'b-danger':(g!==undefined&&g<p.minimo*1.2)?'b-warn':'b-ok';
-    estHtml += '<div class="res-row"><span style="color:var(--text2);font-size:12px">'+p.nome+'</span>' +
-      '<span class="badge '+cls+'" style="font-size:10px">'+(g!==undefined?g+' un':'—')+'</span></div>';
+    estHtml += '<div class="res-row"><span style="color:var(--text2);font-size:12px">'+p.nome+'</span><span class="badge '+cls+'" style="font-size:10px">'+(g!==undefined?g+' un':'—')+'</span></div>';
   });
   if(estHtml) document.getElementById('home-est-body').innerHTML = estHtml;
 
-  // Avarias home
   var avHtml = '';
   avarias.slice(0,3).forEach(function(av){
     avHtml += '<div class="res-row"><span style="color:var(--text2);font-size:12px">'+av.produto+'</span><span class="badge b-danger" style="font-size:10px">'+av.qty+' un</span></div>';
   });
   if(avHtml) document.getElementById('home-av-body').innerHTML = avHtml;
 
-  // Oportunidades home
   var opHtml = '';
   oportunidades.slice(0,3).forEach(function(op){
     opHtml += '<div class="res-row"><span style="color:var(--text2);font-size:12px">'+op.tipo+'</span><span class="badge b-purple" style="font-size:10px">'+{alta:'Alta',media:'Média',baixa:'Baixa'}[op.prio]+'</span></div>';
   });
   if(opHtml) document.getElementById('home-op-body').innerHTML = opHtml;
-  // Recalcular valor de estoque ao atualizar home
   calcMeta();
 }
 
@@ -1820,60 +1668,40 @@ function atualizarHomeConc() {
     var meu = precoProp[p.id]?parseFloat(precoProp[p.id].replace(',','.')):null;
     var cv = parseFloat(conc.replace(',','.'));
     var cls = 'b-neutral', txt = conc;
-    if(meu&&!isNaN(cv)){
-      var d = ((meu-cv)/cv*100).toFixed(1);
-      cls = meu<=cv?'b-ok':'b-danger';
-      txt = meu<=cv?d+'% mais barato':'+'+d+'% mais caro';
-    }
+    if(meu&&!isNaN(cv)){ var d = ((meu-cv)/cv*100).toFixed(1); cls = meu<=cv?'b-ok':'b-danger'; txt = meu<=cv?d+'% mais barato':'+'+d+'% mais caro'; }
     html += '<div class="res-row"><span style="color:var(--text2);font-size:12px">'+p.nome+'</span><span class="badge '+cls+'" style="font-size:10px">'+txt+'</span></div>';
   });
   var el = document.getElementById('home-conc-body');
   if(el && html) el.innerHTML = html;
 }
 
-// ─── SALVAR ───────────────────────────────────────────────────────────────────
 // ─── HELPER SUPABASE ─────────────────────────────────────────────────────────
 function sbPost(tabela, payload) {
-  var sbUrl = SUPABASE_URL;
-  var sbKey = SUPABASE_KEY;
-  // Usar token do usuário logado se disponível, senão usar anon key
-  var token = ls('auth-token') || sbKey;
-  return fetch(sbUrl + '/rest/v1/' + tabela, {
+  var token = ls('auth-token') || SUPABASE_KEY;
+  return fetch(SUPABASE_URL + '/rest/v1/' + tabela, {
     method: 'POST',
-    headers: {
-      'apikey': sbKey,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    },
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
     body: JSON.stringify(payload)
   });
 }
 
 function sbGet(tabela, query) {
-  var sbUrl = SUPABASE_URL;
-  var sbKey = SUPABASE_KEY;
-  var token = ls('auth-token') || sbKey;
-  return fetch(sbUrl + '/rest/v1/' + tabela + (query||''), {
+  var token = ls('auth-token') || SUPABASE_KEY;
+  return fetch(SUPABASE_URL + '/rest/v1/' + tabela + (query||''), {
     method: 'GET',
-    headers: {
-      'apikey': sbKey,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json'
-    }
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
   });
 }
 
 function sbConfig() {
-  return {
-    url: SUPABASE_URL || ls('sb-url'),
-    key: SUPABASE_KEY || ls('sb-key'),
-    promotor: ls('promotor-nome')||'Promotor',
-    loja: ls('promotor-loja')||'Loja'
-  };
+  return { url: SUPABASE_URL, key: SUPABASE_KEY, promotor: ls('promotor-nome')||'Promotor', loja: ls('promotor-loja')||'Loja' };
 }
 
-// ─── SALVAR ESTOQUE ───────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// ─── SALVAR ESTOQUE — UPSERT POR DIA (CORRIGIDO) ─────────────────────────────
+// Lógica: verifica se já existe registro para hoje + promotor + loja + sku.
+// Se existe → PATCH (atualiza). Se não existe → POST (insere). NUNCA duplica.
+// ═══════════════════════════════════════════════════════════════════════════════
 function salvarEstoque() {
   var cfg = sbConfig();
 
@@ -1892,144 +1720,75 @@ function salvarEstoque() {
     return;
   }
 
-  // Montar registros — sem produto_id para evitar FK error
-  var registros = [];
-  produtos.forEach(function(p) {
+  var hoje = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  var token = ls('auth-token') || SUPABASE_KEY;
+  var promotor = cfg.promotor || ls('promotor-nome') || '';
+  var loja     = cfg.loja     || ls('promotor-loja') || '';
+
+  // Para cada produto, verificar se já existe e fazer upsert
+  var promessas = produtos.map(function(p) {
     var gon   = parseInt(estGondola[p.id]) || 0;
     var sis   = parseInt(estSistema[p.id]) || 0;
     var preco = precoProp[p.id] ? parseFloat(String(precoProp[p.id]).replace(',','.')) : null;
-    registros.push({
-      promotor:        cfg.promotor || ls('promotor-nome') || '',
-      loja:            cfg.loja     || ls('promotor-loja') || '',
-      produto_nome:    p.nome,
-      sku:             p.sku,
-      qtd_sistema:     sis,
-      qtd_gondola:     gon,
-      preco_encontrado: preco,
-      preco_sugerido:  p.preco_sugerido || 0
+
+    var payload = {
+      promotor:          promotor,
+      loja:              loja,
+      produto_nome:      p.nome,
+      sku:               p.sku,
+      qtd_sistema:       sis,
+      qtd_gondola:       gon,
+      preco_encontrado:  preco,
+      preco_sugerido:    p.preco_sugerido || 0
+    };
+
+    // Buscar se já existe registro para hoje + promotor + loja + sku
+    var query = '?promotor=eq.' + encodeURIComponent(promotor) +
+                '&loja=eq.'     + encodeURIComponent(loja) +
+                '&sku=eq.'      + encodeURIComponent(p.sku) +
+                '&created_at=gte.' + hoje + 'T00:00:00' +
+                '&created_at=lte.' + hoje + 'T23:59:59' +
+                '&select=id&limit=1';
+
+    return fetch(SUPABASE_URL + '/rest/v1/estoque' + query, {
+      method: 'GET',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(dados) {
+      if (Array.isArray(dados) && dados.length > 0) {
+        // ✅ JÁ EXISTE HOJE — atualizar (PATCH)
+        var id = dados[0].id;
+        return fetch(SUPABASE_URL + '/rest/v1/estoque?id=eq.' + id, {
+          method: 'PATCH',
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        // ✅ NÃO EXISTE HOJE — inserir (POST)
+        return fetch(SUPABASE_URL + '/rest/v1/estoque', {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify(payload)
+        });
+      }
     });
   });
 
-  // Enviar ao banco
-  var token = ls('auth-token') || SUPABASE_KEY;
-  fetch(SUPABASE_URL + '/rest/v1/estoque', {
-    method: 'POST',
-    headers: {
-      'apikey':        SUPABASE_KEY,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type':  'application/json',
-      'Prefer':        'return=minimal'
-    },
-    body: JSON.stringify(registros)
-  })
-  .then(function(r) {
-    if (r.ok) {
-      alert('✓ Estoque salvo!');
+  Promise.all(promessas)
+    .then(function(respostas) {
+      var todosOk = respostas.every(function(r) { return r && r.ok; });
+      if (todosOk) {
+        alert('✓ Estoque salvo! Dados atualizados para hoje.');
+      } else {
+        alert('⚠ Alguns produtos podem não ter sido salvos. Verifique a conexão.');
+      }
       atualizarHome();
-    } else {
-      r.text().then(function(t) {
-        alert('Erro ao salvar: ' + t.slice(0, 200));
-      });
-    }
-  })
-  .catch(function(e) {
-    alert('Erro de conexão: ' + String(e));
-  });
+    })
+    .catch(function(e) {
+      alert('Erro de conexão: ' + String(e));
+    });
 }
-
-// ─── SALVAR EXPOSIÇÃO ─────────────────────────────────────────────────────────
-
-
-// ─── SALVAR CONCORRENTES ──────────────────────────────────────────────────────
-
-
-// ─── SALVAR DESEMPENHO ────────────────────────────────────────────────────────
-
-
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
-
-
-// ─── DATA DE LANÇAMENTO ───────────────────────────────────────────────────────
-
-
-
-// ─── EDITAR PRODUTO ───────────────────────────────────────────────────────────
-var editandoId = null;
-
-
-
-// ─── CADASTRO DE PRODUTOS ─────────────────────────────────────────────────────
-
-
-
-
-
-
-
-
-
-
-
-
-// ─── CADASTRO DE CONCORRENTES ─────────────────────────────────────────────────
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-// ─── TOGGLE TEMA ─────────────────────────────────────────────────────────────
-
-
-function initApp() {
-  // Restaurar tema salvo
-  if (ls('tema') === 'light') {
-    document.body.classList.add('light');
-    var icon = document.getElementById('theme-icon');
-    var lbl  = document.getElementById('theme-lbl');
-    if (icon) icon.textContent = '☀️';
-    if (lbl)  lbl.textContent  = 'LIGHT';
-    var meta = document.querySelector('meta[name=theme-color]');
-    if (meta) meta.content = '#FFFFFF';
-  }
-  // Preencher campos Config
-  var cfgMap = { 'promotor-nome':'cfg-nome', 'fat-meta':'cfg-meta', 'fat-real':'cfg-realizado' };
-  Object.keys(cfgMap).forEach(function(k){
-    var v=ls(k); var el=document.getElementById(cfgMap[k]);
-    if(v&&el) el.value=v;
-  });
-  renderLojas();
-  syncLoja();
-  carregarEstadoLoja();
-  carregarDataLancamento();
-  produtos = getProdutos();
-  renderCadastroProdutos();
-  renderCadastroConcorrentes();
-  renderEstoque();
-  renderConcorrentes();
-  renderFotosExposicao();
-  renderSelectAvaria();
-  renderDesempProdutos();
-  renderDesempHistorico();
-  var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
-  if(fr2||fm2) calcProjecao(fr2, fm2);
-  atualizarHome();
-}
-
-
 
 // ─── SALVAR EXPOSIÇÃO ─────────────────────────────────────────────────────────
 function salvarExposicao() {
@@ -2047,13 +1806,9 @@ function salvarExposicao() {
     planograma_ok:          cbs[7] ? cbs[7].classList.contains('on') : false,
     observacoes: document.getElementById('obs-exp') ? document.getElementById('obs-exp').value : ''
   };
-  if (cfg.url && cfg.key) {
-    sbPost('exposicao', payload)
-      .then(function(r){ alert(r.ok ? '✓ Exposição salva no banco! ' + expoChecks + '/' + expoTotal + ' itens.' : '✓ Salvo localmente.'); })
-      .catch(function(){ alert('✓ Salvo localmente.'); });
-  } else {
-    alert('✓ Exposição salva! ' + expoChecks + '/' + expoTotal + ' itens.\n\nConfigure Supabase em ⚙️ Config.');
-  }
+  sbPost('exposicao', payload)
+    .then(function(r){ alert(r.ok ? '✓ Exposição salva! ' + expoChecks + '/' + expoTotal + ' itens.' : '✓ Salvo localmente.'); })
+    .catch(function(){ alert('✓ Salvo localmente.'); });
   atualizarHome();
 }
 
@@ -2074,28 +1829,17 @@ function salvarConcorrentes() {
       produto_similar: p.concorrente ? p.concorrente.nome : ''
     });
   });
-    // BLOQUEAR se qualquer produto não tiver sistema E gôndola preenchidos
   var faltando = [];
   produtos.forEach(function(p) {
     var semSis = estSistema[p.id] === undefined || estSistema[p.id] === null || String(estSistema[p.id]).trim() === '';
     var semGon = estGondola[p.id] === undefined || estGondola[p.id] === null || String(estGondola[p.id]).trim() === '';
     if (semSis || semGon) faltando.push(p.nome + (semSis ? ' (sistema)' : '') + (semGon ? ' (gôndola)' : ''));
   });
-  if (faltando.length > 0) {
-    alert('Preencha todos os campos antes de salvar:\n\n' + faltando.map(function(n){ return '• ' + n; }).join('\n'));
-    return;
-  }
-  if (!registros.length) {
-    alert('Nenhum dado para salvar.');
-    return;
-  }
-  if (cfg.url && cfg.key) {
-    sbPost('precos_concorrentes', registros)
-      .then(function(r){ alert(r.ok ? '✓ Concorrentes salvos no banco!' : '✓ Salvo localmente.'); })
-      .catch(function(){ alert('✓ Salvo localmente.'); });
-  } else {
-    alert('✓ Preços registrados!\n\nConfigure o Supabase em ⚙️ Config.');
-  }
+  if (faltando.length > 0) { alert('Preencha todos os campos antes de salvar:\n\n' + faltando.map(function(n){ return '• ' + n; }).join('\n')); return; }
+  if (!registros.length) { alert('Nenhum dado para salvar.'); return; }
+  sbPost('precos_concorrentes', registros)
+    .then(function(r){ alert(r.ok ? '✓ Concorrentes salvos!' : '✓ Salvo localmente.'); })
+    .catch(function(){ alert('✓ Salvo localmente.'); });
   atualizarHomeConc();
 }
 
@@ -2108,34 +1852,21 @@ function salvarDesempenho() {
   lss('fat-real', real); lssLoja('fat-real', real);
   lss('fat-meta', meta); lssLoja('fat-meta', meta);
 
-  // Gravar no histórico local
   var historico = lsLojaObj('desemp-historico') || [];
   var hoje = new Date();
   var dataStr = hoje.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
-  // Atualizar entrada do dia ou adicionar nova
   var idx = historico.findIndex(function(h){ return h.data === dataStr; });
   if (idx >= 0) { historico[idx] = {data: dataStr, real: real, meta: meta}; }
   else { historico.push({data: dataStr, real: real, meta: meta}); }
   lssLojaObj('desemp-historico', historico);
 
-  if (cfg.url && cfg.key) {
-    sbPost('desempenho', {
-      promotor: cfg.promotor, loja: cfg.loja,
-      mes_referencia: hoje.toISOString().slice(0,7),
-      meta_mensal: meta, realizado: real
-    })
-    .then(function(r){ alert(r.ok ? '✓ Desempenho salvo no banco!' : '✓ Salvo localmente.'); })
+  sbPost('desempenho', { promotor: cfg.promotor, loja: cfg.loja, mes_referencia: hoje.toISOString().slice(0,7), meta_mensal: meta, realizado: real })
+    .then(function(r){ alert(r.ok ? '✓ Desempenho salvo!' : '✓ Salvo localmente.'); })
     .catch(function(){ alert('✓ Salvo localmente.'); });
-  } else {
-    alert('✓ Desempenho salvo!');
-  }
   calcMeta();
   renderDesempHistorico();
   calcProjecao(real, meta);
 }
-
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
-
 
 // ─── DATA DE LANÇAMENTO ───────────────────────────────────────────────────────
 function salvarDataLancamento(val) { lssLoja('data-lancamento', val); }
@@ -2186,7 +1917,6 @@ function addProduto() {
   if (!nome) { alert('Informe o nome do produto.'); return; }
   if (!sku)  { alert('Informe o SKU/código.'); return; }
   if (isNaN(min)||min<1) { alert('Informe o estoque mínimo.'); return; }
-  // Coletar lojas selecionadas (novas divs clicáveis)
   var lojasDivs = document.querySelectorAll('#np-lojas-check div[data-sel="1"]');
   var lojasSel = [];
   lojasDivs.forEach(function(d){ if(d.dataset.loja) lojasSel.push(d.dataset.loja); });
@@ -2194,14 +1924,13 @@ function addProduto() {
   var lista = carregarProdutos();
   if (lista.find(function(p){ return p.sku===sku; })) { alert('SKU já cadastrado.'); return; }
   var fornecedor = document.getElementById('np-fornecedor') ? document.getElementById('np-fornecedor').value.trim() : '';
-  // Modo edição — atualiza produto existente
+
   if (editandoId) {
     var lista2 = carregarProdutos();
     var idx2 = lista2.findIndex(function(x){ return x.id===editandoId; });
     if (idx2 >= 0) {
       lista2[idx2].nome = nome; lista2[idx2].sku = sku; lista2[idx2].minimo = min;
-      lista2[idx2].preco_sugerido = isNaN(preco)?0:preco;
-      lista2[idx2].lojas = lojasSel;
+      lista2[idx2].preco_sugerido = isNaN(preco)?0:preco; lista2[idx2].lojas = lojasSel;
       var elF2 = document.getElementById('np-fornecedor');
       lista2[idx2].fornecedor = elF2 ? elF2.value.trim() : '';
       localStorage.setItem('cadastro-produtos', JSON.stringify(lista2));
@@ -2217,13 +1946,8 @@ function addProduto() {
     renderCadastroProdutos(); recarregarProdutos();
     return;
   }
-  var novoProduto = {
-    id: 'p'+Date.now(),
-    nome: nome, sku: sku, minimo: min,
-    preco_sugerido: isNaN(preco)?0:preco,
-    fornecedor: fornecedor,
-    lojas: lojasSel
-  };
+
+  var novoProduto = { id: 'p'+Date.now(), nome: nome, sku: sku, minimo: min, preco_sugerido: isNaN(preco)?0:preco, fornecedor: fornecedor, lojas: lojasSel };
   lista.push(novoProduto);
   localStorage.setItem('cadastro-produtos', JSON.stringify(lista));
   document.getElementById('np-nome').value='';
@@ -2234,33 +1958,7 @@ function addProduto() {
   if (elForn) elForn.value='';
   renderCadastroProdutos();
   recarregarProdutos();
-  // Salvar no Supabase com UPSERT — se SKU já existe, atualiza
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (sbUrl && sbKey) {
-    fetch(sbUrl + '/rest/v1/produtos', {
-      method: 'POST',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        id: novoProduto.id,
-        nome: novoProduto.nome,
-        sku: novoProduto.sku,
-        minimo: novoProduto.minimo,
-        preco_sugerido: novoProduto.preco_sugerido
-      })
-    }).then(function(r) {
-      alert(r.ok ? '✓ Produto salvo no banco!' : '✓ Produto cadastrado localmente.');
-    }).catch(function() {
-      alert('✓ Cadastrado!');
-    });
-  } else {
-    alert('✓ Produto cadastrado localmente!\n\nConfigure o Supabase em ⚙️ Config para salvar no banco.');
-  }
+  alert('✓ Produto cadastrado!');
 }
 
 function removeProduto(id) {
@@ -2270,22 +1968,11 @@ function removeProduto(id) {
   localStorage.setItem('cadastro-produtos', JSON.stringify(lista));
   var concs = carregarConcorrentes().filter(function(c){ return c.produto_id!==id; });
   localStorage.setItem('cadastro-concorrentes', JSON.stringify(concs));
-  renderCadastroProdutos();
-  renderCadastroConcorrentes();
-  recarregarProdutos();
-  // Remover do Supabase pelo SKU (chave única)
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (sbUrl && sbKey && produto) {
-    fetch(sbUrl + '/rest/v1/produtos?sku=eq.' + encodeURIComponent(produto.sku), {
-      method: 'DELETE',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json'
-      }
-    }).then(function(r) {
-      if (!r.ok) console.error('Erro ao remover produto do banco');
+  renderCadastroProdutos(); renderCadastroConcorrentes(); recarregarProdutos();
+  if (produto) {
+    var tok = ls('auth-token') || SUPABASE_KEY;
+    fetch(SUPABASE_URL + '/rest/v1/produtos?sku=eq.' + encodeURIComponent(produto.sku), {
+      method: 'DELETE', headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + tok }
     }).catch(function(e){ console.error(e); });
   }
 }
@@ -2294,30 +1981,22 @@ function renderCadastroProdutos() {
   var lista = carregarProdutos();
   var el = document.getElementById('lista-produtos-cfg');
   if (!el) return;
-  if (!lista.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum produto cadastrado.</div>';
-    renderNpLojasCheck();
-    return;
-  }
+  if (!lista.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum produto cadastrado.</div>'; renderNpLojasCheck(); return; }
   el.innerHTML = lista.map(function(p) {
     var lojas = p.lojas && p.lojas.length ? p.lojas.join(', ') : '<span style="color:var(--amber)">Nenhuma loja vinculada</span>';
     return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-        '<div style="flex:1">' +
-          '<div style="font-size:13px;font-weight:600;color:var(--text)">' + p.nome + '</div>' +
-          '<div style="font-size:11px;color:var(--text3);margin-top:1px">' + p.sku + (p.fornecedor?' · '+p.fornecedor:'') + ' · Mín: ' + p.minimo + ' · R$ ' + p.preco_sugerido.toFixed(2).replace('.',',') + '</div>' +
-          '<div style="font-size:11px;margin-top:3px">🏪 ' + lojas + '</div>' +
+        '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">'+p.nome+'</div>' +
+        '<div style="font-size:11px;color:var(--text3);margin-top:1px">'+p.sku+(p.fornecedor?' · '+p.fornecedor:'')+ ' · Mín: '+p.minimo+' · R$ '+p.preco_sugerido.toFixed(2).replace('.',',')+'</div>' +
+        '<div style="font-size:11px;margin-top:3px">🏪 '+lojas+'</div></div>' +
+        '<div style="display:flex;gap:4px;flex-shrink:0">' +
+          '<button data-id="'+p.id+'" onclick="editarProduto(this.dataset.id)" style="background:var(--brand-light);color:var(--brand);border:1px solid var(--brand);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">Editar</button>' +
+          '<button data-id="'+p.id+'" onclick="removeProduto(this.dataset.id)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">Remover</button>' +
         '</div>' +
-        '<div style="display:flex;gap:4px;flex-shrink:0">' +'<button data-id="' + p.id + '" onclick="editarProduto(this.dataset.id)" style="background:var(--brand-light);color:var(--brand);border:1px solid var(--brand);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">Editar</button>' +'<button data-id="' + p.id + '" onclick="removeProduto(this.dataset.id)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">Remover</button>' +'</div>' +
-      '</div>' +
-    '</div>';
+      '</div></div>';
   }).join('');
-  // Atualizar select do concorrente
   var sel = document.getElementById('nc-meu-produto');
-  if (sel) {
-    sel.innerHTML = '<option value="">Selecione o produto</option>' +
-      lista.map(function(p){ return '<option value="'+p.id+'">'+p.nome+'</option>'; }).join('');
-  }
+  if (sel) sel.innerHTML = '<option value="">Selecione o produto</option>' + lista.map(function(p){ return '<option value="'+p.id+'">'+p.nome+'</option>'; }).join('');
   renderNpLojasCheck();
 }
 
@@ -2325,23 +2004,12 @@ function renderNpLojasCheck() {
   var lojas = carregarLojas();
   var el = document.getElementById('np-lojas-check');
   if (!el) return;
-  if (!lojas.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--text3);font-style:italic">Cadastre lojas em "Minhas lojas" para selecionar</div>';
-    return;
-  }
+  if (!lojas.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);font-style:italic">Cadastre lojas em "Minhas lojas" para selecionar</div>'; return; }
   el.innerHTML = '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Toque para selecionar uma ou mais lojas:</div>' +
     lojas.map(function(l, idx) {
-      return '<div id="loja-opt-' + idx + '" data-loja="' + l.nome + '" data-sel="0" ' +
-        'onclick="toggleLojaOpt(this)" ' +
-        'style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;' +
-        'background:var(--bg);border-radius:var(--radius-sm);border:2px solid var(--border);' +
-        'margin-bottom:8px;transition:border-color 0.15s,background 0.15s;-webkit-tap-highlight-color:transparent">' +
-        '<div id="loja-box-' + idx + '" style="width:24px;height:24px;border-radius:6px;border:2px solid var(--border);' +
-        'background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:700;color:#000"></div>' +
-        '<div>' +
-          '<div style="font-size:14px;font-weight:600;color:var(--text)">' + l.nome + '</div>' +
-          '<div style="font-size:11px;color:var(--text3)">' + (l.rede||'Outra') + (l.cidade?' · '+l.cidade:'') + '</div>' +
-        '</div>' +
+      return '<div id="loja-opt-'+idx+'" data-loja="'+l.nome+'" data-sel="0" onclick="toggleLojaOpt(this)" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);border:2px solid var(--border);margin-bottom:8px;transition:border-color 0.15s,background 0.15s;-webkit-tap-highlight-color:transparent">' +
+        '<div id="loja-box-'+idx+'" style="width:24px;height:24px;border-radius:6px;border:2px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:700;color:#000"></div>' +
+        '<div><div style="font-size:14px;font-weight:600;color:var(--text)">'+l.nome+'</div><div style="font-size:11px;color:var(--text3)">'+(l.rede||'Outra')+(l.cidade?' · '+l.cidade:'')+'</div></div>' +
       '</div>';
     }).join('');
 }
@@ -2351,19 +2019,13 @@ function toggleLojaOpt(el) {
   var idx = el.id.replace('loja-opt-','');
   var box = document.getElementById('loja-box-' + idx);
   if (!sel) {
-    el.setAttribute('data-sel','1');
-    el.style.borderColor = 'var(--brand)';
-    el.style.background  = 'var(--brand-light)';
+    el.setAttribute('data-sel','1'); el.style.borderColor = 'var(--brand)'; el.style.background = 'var(--brand-light)';
     if (box) { box.style.background='var(--brand)'; box.style.borderColor='var(--brand)'; box.textContent='✓'; }
   } else {
-    el.setAttribute('data-sel','0');
-    el.style.borderColor = 'var(--border)';
-    el.style.background  = 'var(--bg)';
+    el.setAttribute('data-sel','0'); el.style.borderColor = 'var(--border)'; el.style.background = 'var(--bg)';
     if (box) { box.style.background='var(--surface2)'; box.style.borderColor='var(--border)'; box.textContent=''; }
   }
 }
-
-function toggleLojaCheck(label) { toggleLojaOpt(label); }
 
 // ─── CADASTRO DE CONCORRENTES ─────────────────────────────────────────────────
 function addConcorrente() {
@@ -2384,17 +2046,9 @@ function addConcorrente() {
   document.getElementById('nc-similar').value='';
   renderCadastroConcorrentes();
   recarregarProdutos();
-  // Salvar no Supabase
-  sbPost('concorrentes', {
-    id: novoConc.id,
-    produto_id: novoConc.produto_id,
-    empresa: novoConc.empresa,
-    produto_similar: novoConc.produto_similar
-  }).then(function(r) {
-    alert(r && r.ok ? '✓ Similar cadastrado e salvo no banco!' : '✓ Similar cadastrado localmente!');
-  }).catch(function() {
-    alert('✓ Similar cadastrado!');
-  });
+  sbPost('concorrentes', novoConc)
+    .then(function(r){ alert(r && r.ok ? '✓ Similar cadastrado!' : '✓ Cadastrado localmente!'); })
+    .catch(function(){ alert('✓ Similar cadastrado!'); });
 }
 
 function removeConcorrente(id) {
@@ -2402,18 +2056,10 @@ function removeConcorrente(id) {
   localStorage.setItem('cadastro-concorrentes', JSON.stringify(lista));
   renderCadastroConcorrentes();
   recarregarProdutos();
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (sbUrl && sbKey) {
-    fetch(sbUrl + '/rest/v1/concorrentes?id=eq.' + encodeURIComponent(id), {
-      method: 'DELETE',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json'
-      }
-    }).catch(function(e){ console.error('Erro ao deletar concorrente:', e); });
-  }
+  var tok = ls('auth-token') || SUPABASE_KEY;
+  fetch(SUPABASE_URL + '/rest/v1/concorrentes?id=eq.' + encodeURIComponent(id), {
+    method: 'DELETE', headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + tok }
+  }).catch(function(e){ console.error(e); });
 }
 
 function renderCadastroConcorrentes() {
@@ -2421,85 +2067,41 @@ function renderCadastroConcorrentes() {
   var prods = carregarProdutos();
   var el = document.getElementById('lista-conc-cfg');
   if (!el) return;
-  if (!lista.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum similar cadastrado.</div>';
-    return;
-  }
+  if (!lista.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum similar cadastrado.</div>'; return; }
   el.innerHTML = lista.map(function(c) {
     var p = prods.find(function(x){ return x.id===c.produto_id; });
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">' +
-      '<div>' +
-        '<div style="font-size:12px;font-weight:500;color:var(--brand)">'+(p?p.nome:'—')+'</div>' +
-        '<div style="font-size:12px;color:var(--text);margin-top:2px">↔ '+(c.produto_similar||c.similar||'—')+'</div>' +
-        '<div style="font-size:11px;color:var(--text3);margin-top:1px">'+c.empresa+'</div>' +
-      '</div>' +
+      '<div><div style="font-size:12px;font-weight:500;color:var(--brand)">'+(p?p.nome:'—')+'</div>' +
+      '<div style="font-size:12px;color:var(--text);margin-top:2px">↔ '+(c.produto_similar||c.similar||'—')+'</div>' +
+      '<div style="font-size:11px;color:var(--text3);margin-top:1px">'+c.empresa+'</div></div>' +
       '<button data-id="'+c.id+'" onclick="removeConcorrente(this.dataset.id)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Remover</button>' +
     '</div>';
   }).join('');
 }
 
 function sincronizarProdutos() {
-  var sbUrl = SUPABASE_URL;
-  var sbKey = SUPABASE_KEY;
-  var token = ls('auth-token') || sbKey;
+  var token = ls('auth-token') || SUPABASE_KEY;
   var lista = carregarProdutos();
   if (!lista.length) { alert('Nenhum produto cadastrado.'); return; }
-
-  var payload = lista.map(function(p) {
-    return { id: p.id, nome: p.nome, sku: p.sku, minimo: p.minimo, preco_sugerido: p.preco_sugerido };
-  });
-
-  fetch(sbUrl + '/rest/v1/produtos', {
+  var payload = lista.map(function(p) { return { id: p.id, nome: p.nome, sku: p.sku, minimo: p.minimo, preco_sugerido: p.preco_sugerido }; });
+  fetch(SUPABASE_URL + '/rest/v1/produtos', {
     method: 'POST',
-    headers: {
-      'apikey': sbKey,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    },
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
     body: JSON.stringify(payload)
   }).then(function(r) {
-    if (r.ok) {
-      // Sincronizar também os concorrentes
-      var concs = carregarConcorrentes();
-      if (concs.length) {
-        var concPayload = concs.map(function(c) {
-          return { id: c.id, produto_id: c.produto_id, empresa: c.empresa, produto_similar: c.produto_similar || c.similar || '' };
-        });
-        return fetch(sbUrl + '/rest/v1/concorrentes', {
-          method: 'POST',
-          headers: {
-            'apikey': sbKey,
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify(concPayload)
-        }).then(function(r2) {
-          alert(r2.ok
-            ? '✓ Sincronizado! ' + lista.length + ' produto(s) e ' + concs.length + ' similar(es) enviados ao banco.'
-            : '✓ Produtos salvos. Erro ao salvar similares.');
-        });
-      }
-      alert('✓ ' + lista.length + ' produto(s) sincronizado(s) com o banco!');
-    } else {
-      r.text().then(function(t){ alert('Erro ao sincronizar: ' + t.slice(0,150)); });
-    }
+    if (r.ok) { alert('✓ ' + lista.length + ' produto(s) sincronizado(s)!'); }
+    else { r.text().then(function(t){ alert('Erro ao sincronizar: ' + t.slice(0,150)); }); }
   }).catch(function(e){ alert('Erro de conexão: ' + e); });
 }
 
 function recarregarProdutos() {
   produtos = getProdutos();
-  renderEstoque();
-  renderConcorrentes();
-  renderSelectAvaria();
-  renderDesempProdutos();
+  renderEstoque(); renderConcorrentes(); renderSelectAvaria();
   renderDesempHistorico();
   var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
   if(fr2||fm2) calcProjecao(fr2, fm2);
   atualizarHome();
 }
-
 
 function previewMeta() {
   var meta = parseFloat(document.getElementById('cfg-meta').value) || 0;
@@ -2508,11 +2110,8 @@ function previewMeta() {
   if (!preview) return;
   if (!meta) { preview.style.display = 'none'; return; }
   preview.style.display = 'block';
-
   var falta = Math.max(0, meta - real);
   var pct   = Math.min(100, Math.round((real / meta) * 100));
-
-  // Dias úteis restantes
   var hoje = new Date();
   var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
   var diasRestantes = 0;
@@ -2522,104 +2121,25 @@ function previewMeta() {
   }
   diasRestantes = Math.max(1, diasRestantes);
   var diario = Math.ceil(falta / diasRestantes);
-
   var diaEl = document.getElementById('cfg-meta-dia');
   var pctEl = document.getElementById('cfg-meta-pct');
   var barEl = document.getElementById('cfg-meta-bar');
   if (diaEl) diaEl.textContent = 'R$ ' + diario.toLocaleString('pt-BR');
-  if (pctEl) {
-    pctEl.textContent = pct + '%';
-    pctEl.style.color = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--red)';
-  }
-  if (barEl) {
-    barEl.style.width = pct + '%';
-    barEl.style.background = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--brand)';
-  }
+  if (pctEl) { pctEl.textContent = pct + '%'; pctEl.style.color = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--red)'; }
+  if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--brand)'; }
 }
-function salvarPerfil(){
-  lss('promotor-nome',document.getElementById('cfg-nome').value.trim());
-  // loja agora é gerenciada pelo sistema de múltiplas lojas
+
+function salvarPerfil() {
+  lss('promotor-nome', document.getElementById('cfg-nome').value.trim());
   var meta = document.getElementById('cfg-meta').value.trim();
   var real = document.getElementById('cfg-realizado').value.trim();
-  if (meta) {
-    lss('fat-meta', meta); lssLoja('fat-meta', meta);
-    // Sincronizar com campo da tela desempenho
-    var elMeta = document.getElementById('fat-meta-input');
-    if (elMeta) elMeta.value = meta;
-  }
-  if (real) {
-    lss('fat-real', real); lssLoja('fat-real', real);
-    var elReal = document.getElementById('fat-real-input');
-    if (elReal) elReal.value = real;
-  }
+  if (meta) { lss('fat-meta', meta); lssLoja('fat-meta', meta); var elMeta = document.getElementById('fat-meta-input'); if (elMeta) elMeta.value = meta; }
+  if (real) { lss('fat-real', real); lssLoja('fat-real', real); var elReal = document.getElementById('fat-real-input'); if (elReal) elReal.value = real; }
   syncLoja();
   calcMeta();
   alert('✓ Perfil e meta salvos!');
 }
 
-function salvarSupabase(){
-  var url = document.getElementById('cfg-sb-url').value.trim();
-  var key = document.getElementById('cfg-sb-key').value.trim();
-  if (!url || !key) { alert('Preencha a URL e a chave.'); return; }
-  // Garantir que a URL não tem barra no final
-  url = url.replace(/\/+$/, '');
-  lss('sb-url', url);
-  lss('sb-key', key);
-  alert('✓ Supabase salvo! Toque em "Testar conexão agora" para verificar.');
-}
-
-function testarConexaoSupabase() {
-  var url = ls('sb-url');
-  var key = ls('sb-key');
-  var res = document.getElementById('sb-teste-resultado');
-  res.style.display = 'block';
-  res.style.background = 'var(--surface2)';
-  res.style.color = 'var(--text2)';
-  res.textContent = '⏳ Testando conexão...';
-
-  if (!url || !key) {
-    res.style.background = 'var(--red-bg)';
-    res.style.color = 'var(--red)';
-    res.textContent = '✕ URL ou chave não configurados. Preencha e salve primeiro.';
-    return;
-  }
-
-  // Testar fazendo uma leitura simples na tabela produtos
-  fetch(url + '/rest/v1/produtos?limit=1', {
-    method: 'GET',
-    headers: {
-      'apikey': key,
-      'Authorization': 'Bearer ' + key,
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(function(r) {
-    if (r.ok) {
-      res.style.background = 'var(--green-bg)';
-      res.style.color = 'var(--green)';
-      res.textContent = '✓ Conexão com Supabase funcionando! Os dados serão salvos no banco.';
-    } else {
-      r.text().then(function(t) {
-        res.style.background = 'var(--red-bg)';
-        res.style.color = 'var(--red)';
-        if (r.status === 401) {
-          res.textContent = '✕ Chave inválida (erro 401). Use a chave eyJ... da aba "Legacy anon" no Supabase.';
-        } else if (r.status === 404) {
-          res.textContent = '✕ URL incorreta (erro 404). Verifique a URL do projeto no Supabase → Settings → General.';
-        } else {
-          res.textContent = '✕ Erro ' + r.status + ': ' + t.slice(0, 150);
-        }
-      });
-    }
-  })
-  .catch(function(e) {
-    res.style.background = 'var(--red-bg)';
-    res.style.color = 'var(--red)';
-    res.textContent = '✕ Falha de rede: ' + e + '. Verifique sua internet.';
-  });
-}
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
 // ─── TOGGLE TEMA ─────────────────────────────────────────────────────────────
 function toggleTema() {
   var isLight = document.body.classList.toggle('light');
@@ -2628,14 +2148,39 @@ function toggleTema() {
   var lbl  = document.getElementById('theme-lbl');
   if (icon) icon.textContent = isLight ? '☀️' : '🌙';
   if (lbl)  lbl.textContent  = isLight ? 'LIGHT' : 'DARK';
-  // Atualizar meta theme-color
   var meta = document.querySelector('meta[name=theme-color]');
   if (meta) meta.content = isLight ? '#FFFFFF' : '#14213D';
 }
 
-
-
-
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function initApp() {
+  if (ls('tema') === 'light') {
+    document.body.classList.add('light');
+    var icon = document.getElementById('theme-icon');
+    var lbl  = document.getElementById('theme-lbl');
+    if (icon) icon.textContent = '☀️';
+    if (lbl)  lbl.textContent  = 'LIGHT';
+    var meta = document.querySelector('meta[name=theme-color]');
+    if (meta) meta.content = '#FFFFFF';
+  }
+  var cfgMap = { 'promotor-nome':'cfg-nome', 'fat-meta':'cfg-meta', 'fat-real':'cfg-realizado' };
+  Object.keys(cfgMap).forEach(function(k){ var v=ls(k); var el=document.getElementById(cfgMap[k]); if(v&&el) el.value=v; });
+  renderLojas();
+  syncLoja();
+  carregarEstadoLoja();
+  carregarDataLancamento();
+  produtos = getProdutos();
+  renderCadastroProdutos();
+  renderCadastroConcorrentes();
+  renderEstoque();
+  renderConcorrentes();
+  renderFotosExposicao();
+  renderSelectAvaria();
+  renderDesempHistorico();
+  var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
+  if(fr2||fm2) calcProjecao(fr2, fm2);
+  atualizarHome();
+}
 
 </script>
 </body>
