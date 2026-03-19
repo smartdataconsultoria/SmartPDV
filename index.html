@@ -1739,15 +1739,17 @@ function salvarEstoque() {
       qtd_sistema:       sis,
       qtd_gondola:       gon,
       preco_encontrado:  preco,
-      preco_sugerido:    p.preco_sugerido || 0
+      preco_sugerido:    p.preco_sugerido || 0,
+      data_registro:     hoje
     };
 
     // Buscar se já existe registro para hoje + promotor + loja + sku
+    // data_registro é timestamp — filtrar pelo dia completo no fuso de Brasília (UTC-3)
     var query = '?promotor=eq.' + encodeURIComponent(promotor) +
                 '&loja=eq.'     + encodeURIComponent(loja) +
                 '&sku=eq.'      + encodeURIComponent(p.sku) +
-                '&created_at=gte.' + hoje + 'T00:00:00' +
-                '&created_at=lte.' + hoje + 'T23:59:59' +
+                '&data_registro=gte.' + hoje + 'T00:00:00-03:00' +
+                '&data_registro=lte.' + hoje + 'T23:59:59-03:00' +
                 '&select=id&limit=1';
 
     return fetch(SUPABASE_URL + '/rest/v1/estoque' + query, {
