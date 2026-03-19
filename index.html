@@ -859,64 +859,81 @@ function cpfParaEmail(cpf) {
 }
 
 function fazerLogin() {
-  initSupabase();
-  var email = document.getElementById('login-email').value.trim();
-  var senha = document.getElementById('login-senha').value;
+  var cpf    = document.getElementById('login-email').value.trim();
+  var senha  = document.getElementById('login-senha').value.trim();
   var errEl  = document.getElementById('login-error');
   var loadEl = document.getElementById('login-loading');
   var btnEl  = document.getElementById('login-btn');
 
   errEl.style.display  = 'none';
-  if (!email || !senha) {
+  errEl.textContent    = '';
+
+  if (!cpf || !senha) {
     errEl.textContent  = 'Preencha o CPF e a senha.';
     errEl.style.display = 'block';
     return;
   }
-  // Credenciais sempre disponíveis — embutidas no código
 
-  btnEl.disabled = true;
+  // Limpar CPF para comparar
+  var cpfLimpo = cpf.replace(/\D/g, '');
+
+  btnEl.disabled       = true;
   loadEl.style.display = 'block';
+  loadEl.textContent   = '⏳ Verificando...';
 
-  fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
-    method: 'POST',
+  var concluido = false;
+  var timeout = setTimeout(function() {
+    if (!concluido) {
+      concluido = true;
+      btnEl.disabled       = false;
+      loadEl.style.display = 'none';
+      errEl.textContent    = 'Tempo esgotado. Verifique sua internet.';
+      errEl.style.display  = 'block';
+    }
+  }, 10000);
+
+  // Buscar promotor na tabela pelo CPF e senha
+  fetch(SUPABASE_URL + '/rest/v1/promotores?cpf=eq.' + cpfLimpo + '&senha=eq.' + encodeURIComponent(senha) + '&ativo=eq.true&select=*', {
+    method: 'GET',
     headers: {
       'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
       'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ email: cpfParaEmail(email), password: senha })
+    }
   })
-  .then(function(r) { return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
+  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, status: r.status, data: d }; }); })
   .then(function(res) {
-    btnEl.disabled = false;
+    clearTimeout(timeout);
+    if (concluido) return;
+    concluido = true;
+    btnEl.disabled       = false;
     loadEl.style.display = 'none';
-    if (res.ok && res.data.access_token) {
-      // Login OK — salvar token e dados do usuário
-      lss('auth-token', res.data.access_token);
-      lss('auth-email', email); lss('auth-cpf', email);
-      // Usar nome dos metadados se disponível, senão usar CPF formatado
-      var meta = res.data.user && res.data.user.user_metadata;
-      var nome = meta && meta.nome ? meta.nome : (meta && meta.full_name ? meta.full_name : '');
-      var cpfFormatado = email; // CPF já está formatado no campo
-      if (!ls('promotor-nome') || ls('promotor-nome') === cpfFormatado) {
-        if (nome) lss('promotor-nome', nome);
-      }
-      lss('auth-cpf', email);
+
+    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+      var promotor = res.data[0];
+      // Login OK — salvar sessão local
+      lss('auth-token', SUPABASE_KEY); // usar anon key como token
+      lss('auth-cpf', cpf);
+      lss('promotor-id', promotor.id || '');
+      lss('promotor-nome', promotor.nome || cpfLimpo);
+      lss('promotor-loja', ls('promotor-loja') || promotor.loja || '');
       entrarNoApp();
+    } else if (res.ok && Array.isArray(res.data) && res.data.length === 0) {
+      errEl.textContent   = 'CPF ou senha incorretos. Verifique e tente novamente.';
+      errEl.style.display = 'block';
     } else {
-      var msg = '';
-      if (res.status === 400) msg = 'CPF ou senha incorretos. Verifique e tente novamente.';
-      else if (res.status === 422) msg = 'Formato inválido. Verifique o CPF.';
-      else if (res.status === 429) msg = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
-      else msg = res.data.error_description || res.data.message || res.data.msg || ('Erro ' + res.status + ': verifique suas credenciais.');
-      errEl.textContent = msg;
+      errEl.textContent   = 'Erro ' + res.status + ': ' + JSON.stringify(res.data).slice(0, 100);
       errEl.style.display = 'block';
     }
   })
   .catch(function(e) {
-    btnEl.disabled = false;
+    clearTimeout(timeout);
+    if (concluido) return;
+    concluido = true;
+    btnEl.disabled       = false;
     loadEl.style.display = 'none';
-    errEl.textContent = 'Erro de conexão. Verifique sua internet e tente novamente.';
-    errEl.style.display = 'block';
+    errEl.textContent    = 'Erro de conexão: ' + String(e);
+    errEl.style.display  = 'block';
   });
 }
 
@@ -931,27 +948,11 @@ function entrarNoApp() {
 }
 
 function verificarSessao() {
-  initSupabase();
-  var token = ls('auth-token');
-  // Supabase sempre configurado
-  if (token) {
-    // Verificar se o token ainda é válido
-    fetch(SUPABASE_URL + '/auth/v1/user', {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
-    })
-    .then(function(r) {
-      if (r.ok) {
-        entrarNoApp();
-      } else {
-        lss('auth-token','');
-        mostrarLogin();
-      }
-    })
-    .catch(function() {
-      // Sem internet — entrar com token salvo
-      if (ls('auth-token')) entrarNoApp();
-      else mostrarLogin();
-    });
+  // Autenticação via banco — verifica se tem sessão local válida
+  var cpf  = ls('auth-cpf');
+  var nome = ls('promotor-nome');
+  if (cpf && nome) {
+    entrarNoApp();
   } else {
     mostrarLogin();
   }
@@ -965,8 +966,10 @@ function mostrarLogin() {
 
 function fazerLogout() {
   lss('auth-token','');
+  lss('auth-cpf','');
+  lss('promotor-nome','');
+  lss('promotor-id','');
   mostrarLogin();
-  // Limpar campos
   var em = document.getElementById('login-email');
   var se = document.getElementById('login-senha');
   if (em) em.value = '';
