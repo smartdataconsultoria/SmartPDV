@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teste Login SmartPDV</title>
+<style>
+  body { font-family: monospace; padding: 20px; background: #111; color: #fff; }
+  input { display:block; width:100%; padding:10px; margin:8px 0; font-size:16px; background:#222; color:#fff; border:1px solid #444; border-radius:6px; }
+  button { width:100%; padding:12px; background:#FCA311; color:#000; font-size:16px; font-weight:bold; border:none; border-radius:6px; cursor:pointer; margin-top:8px; }
+  #log { background:#000; padding:12px; border-radius:6px; margin-top:16px; white-space:pre-wrap; font-size:13px; min-height:100px; border:1px solid #333; }
+  .ok  { color: #2ECC71; }
+  .err { color: #FF4D6D; }
+  .inf { color: #4DA3FF; }
+</style>
+</head>
+<body>
+<h2>🔍 Teste de Login — SmartPDV</h2>
+
+<label>CPF:</label>
+<input type="text" id="cpf" value="081.909.904-03">
+
+<label>Senha:</label>
+<input type="text" id="senha" value="@Rafa1990el@">
+
+<button onclick="testar()">Testar conexão</button>
+<button onclick="testarSemFiltro()" style="background:#4DA3FF;margin-top:6px">Listar todos promotores</button>
+<button onclick="testarTabelas()" style="background:#9B59B6;margin-top:6px">Testar tabelas</button>
+
+<div id="log">Clique em um botão para testar...</div>
+
+<script>
+var URL = 'https://tnaasnshthzyvbfxxerg.supabase.co';
+var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuYWFzbnNodGh6eXZiZnh4ZXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1MzM0NjgsImV4cCI6MjA4OTEwOTQ2OH0.8iYQ6kAhNrtucanFCPfYrwNN18YmFeQ8JfwGPRUZxs4';
+
+function log(msg, cls) {
+  var el = document.getElementById('log');
+  var line = document.createElement('div');
+  line.className = cls || '';
+  line.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function limpar() {
+  document.getElementById('log').innerHTML = '';
+}
+
+function testar() {
+  limpar();
+  var cpf   = document.getElementById('cpf').value.trim().replace(/\D/g,'');
+  var senha = document.getElementById('senha').value.trim();
+  log('CPF limpo: ' + cpf, 'inf');
+  log('Senha: ' + senha, 'inf');
+  log('URL: ' + URL + '/rest/v1/promotores?select=*&cpf=eq.' + cpf, 'inf');
+
+  fetch(URL + '/rest/v1/promotores?select=id,nome,cpf,loja,ativo&cpf=eq.' + cpf + '&senha=eq.' + encodeURIComponent(senha), {
+    headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY }
+  })
+  .then(function(r) {
+    log('Status HTTP: ' + r.status, r.ok ? 'ok' : 'err');
+    return r.text();
+  })
+  .then(function(txt) {
+    log('Resposta: ' + txt, 'inf');
+    try {
+      var d = JSON.parse(txt);
+      if (Array.isArray(d) && d.length > 0) {
+        log('✓ LOGIN OK! Promotor: ' + d[0].nome, 'ok');
+      } else if (Array.isArray(d) && d.length === 0) {
+        log('✗ Nenhum resultado — CPF ou senha incorretos no banco', 'err');
+      } else {
+        log('✗ Resposta inesperada: ' + JSON.stringify(d), 'err');
+      }
+    } catch(e) {
+      log('✗ Erro ao parsear: ' + e, 'err');
+    }
+  })
+  .catch(function(e) {
+    log('✗ Erro de rede: ' + e, 'err');
+  });
+}
+
+function testarSemFiltro() {
+  limpar();
+  log('Buscando todos os promotores...', 'inf');
+  fetch(URL + '/rest/v1/promotores?select=id,nome,cpf,loja,ativo', {
+    headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY }
+  })
+  .then(function(r) {
+    log('Status: ' + r.status, r.ok ? 'ok' : 'err');
+    return r.text();
+  })
+  .then(function(txt) {
+    log('Resposta: ' + txt, 'inf');
+  })
+  .catch(function(e) { log('Erro: ' + e, 'err'); });
+}
+
+function testarTabelas() {
+  limpar();
+  var tabelas = ['promotores', 'produtos', 'estoque'];
+  tabelas.forEach(function(t) {
+    fetch(URL + '/rest/v1/' + t + '?select=*&limit=1', {
+      headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY }
+    })
+    .then(function(r) {
+      log('Tabela ' + t + ': HTTP ' + r.status, r.ok ? 'ok' : 'err');
+      return r.text();
+    })
+    .then(function(txt) {
+      log('  → ' + txt.slice(0,80), 'inf');
+    })
+    .catch(function(e) { log('Tabela ' + t + ' erro: ' + e, 'err'); });
+  });
+}
+</script>
+</body>
+</html>
