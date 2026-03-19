@@ -839,6 +839,7 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
 </nav>
 
 <script>
+
 // ─── AUTENTICAÇÃO ────────────────────────────────────────────────────────────
 // Credenciais Supabase — fixas no código
 var SUPABASE_URL = 'https://tnaasnshthzyvbfxxerg.supabase.co';
@@ -907,22 +908,11 @@ function fazerLogin() {
   });
 }
 
-function mostrarErroLogin(msg) {
-  var el = document.getElementById('login-error');
-  if (el) { el.textContent = msg; el.style.display = 'block'; }
-}
 
-function mostrarErroLogin(msg) {
-  var el = document.getElementById('login-error');
-  if (el) { el.textContent = msg; el.style.display = 'block'; }
-}
 
-function mostrarErroLogin(msg) {
-  var el = document.getElementById('login-error');
-  if (el) { el.textContent = msg; el.style.display = 'block'; }
-  // Também mostrar via alert para garantir visibilidade
-  alert(msg);
-}
+
+
+
 
 function mostrarErroLogin(msg) {
   var el = document.getElementById('login-error');
@@ -1944,606 +1934,61 @@ function salvarEstoque() {
 }
 
 // ─── SALVAR EXPOSIÇÃO ─────────────────────────────────────────────────────────
-function salvarExposicao() {
-  var cfg = sbConfig();
-  var cbs = document.querySelectorAll('#sc-exposicao .cb');
-  var payload = {
-    promotor: cfg.promotor, loja: cfg.loja,
-    ponto_natural:          cbs[0] ? cbs[0].classList.contains('on') : false,
-    preco_fisico_ok:        cbs[1] ? cbs[1].classList.contains('on') : false,
-    precificacao_visivel:   cbs[2] ? cbs[2].classList.contains('on') : false,
-    area_extra_promocao:    cbs[3] ? cbs[3].classList.contains('on') : false,
-    material_merchandising: cbs[4] ? cbs[4].classList.contains('on') : false,
-    cross_merchandising:    cbs[5] ? cbs[5].classList.contains('on') : false,
-    produtos_sem_avaria:    cbs[6] ? cbs[6].classList.contains('on') : false,
-    planograma_ok:          cbs[7] ? cbs[7].classList.contains('on') : false,
-    observacoes: document.getElementById('obs-exp') ? document.getElementById('obs-exp').value : ''
-  };
-  if (cfg.url && cfg.key) {
-    sbPost('exposicao', payload)
-      .then(function(r){ alert(r.ok ? '✓ Exposição salva no banco! ' + expoChecks + '/' + expoTotal + ' itens.' : '✓ Salvo localmente.'); })
-      .catch(function(){ alert('✓ Salvo localmente.'); });
-  } else {
-    alert('✓ Exposição salva! ' + expoChecks + '/' + expoTotal + ' itens.\n\nConfigure Supabase em ⚙️ Config.');
-  }
-  atualizarHome();
-}
+
 
 // ─── SALVAR CONCORRENTES ──────────────────────────────────────────────────────
-function salvarConcorrentes() {
-  var cfg = sbConfig();
-  var registros = [];
-  produtos.forEach(function(p) {
-    var conc = precoConc[p.id];
-    if (!conc) return;
-    var meu = precoProp[p.id] ? parseFloat(precoProp[p.id].replace(',','.')) : null;
-    registros.push({
-      promotor: cfg.promotor, loja: cfg.loja,
-      produto_id: p.id, produto_nome: p.nome,
-      meu_preco: meu,
-      preco_concorrente: parseFloat(conc.replace(',','.')),
-      empresa_concorrente: p.concorrente ? p.concorrente.empresa : '',
-      produto_similar: p.concorrente ? p.concorrente.nome : ''
-    });
-  });
-    // BLOQUEAR se qualquer produto não tiver sistema E gôndola preenchidos
-  var faltando = [];
-  produtos.forEach(function(p) {
-    var semSis = estSistema[p.id] === undefined || estSistema[p.id] === null || String(estSistema[p.id]).trim() === '';
-    var semGon = estGondola[p.id] === undefined || estGondola[p.id] === null || String(estGondola[p.id]).trim() === '';
-    if (semSis || semGon) faltando.push(p.nome + (semSis ? ' (sistema)' : '') + (semGon ? ' (gôndola)' : ''));
-  });
-  if (faltando.length > 0) {
-    alert('Preencha todos os campos antes de salvar:\n\n' + faltando.map(function(n){ return '• ' + n; }).join('\n'));
-    return;
-  }
-  if (!registros.length) {
-    alert('Nenhum dado para salvar.');
-    return;
-  }
-  if (cfg.url && cfg.key) {
-    sbPost('precos_concorrentes', registros)
-      .then(function(r){ alert(r.ok ? '✓ Concorrentes salvos no banco!' : '✓ Salvo localmente.'); })
-      .catch(function(){ alert('✓ Salvo localmente.'); });
-  } else {
-    alert('✓ Preços registrados!\n\nConfigure o Supabase em ⚙️ Config.');
-  }
-  atualizarHomeConc();
-}
+
 
 // ─── SALVAR DESEMPENHO ────────────────────────────────────────────────────────
-function salvarDesempenho() {
-  var cfg = sbConfig();
-  var real = parseFloat(document.getElementById('fat-real-input').value) || 0;
-  var meta = parseFloat(document.getElementById('fat-meta-input').value) || 0;
-  if (!meta) { alert('Informe a meta do mês antes de salvar.'); return; }
-  lss('fat-real', real); lssLoja('fat-real', real);
-  lss('fat-meta', meta); lssLoja('fat-meta', meta);
 
-  // Gravar no histórico local
-  var historico = lsLojaObj('desemp-historico') || [];
-  var hoje = new Date();
-  var dataStr = hoje.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
-  // Atualizar entrada do dia ou adicionar nova
-  var idx = historico.findIndex(function(h){ return h.data === dataStr; });
-  if (idx >= 0) { historico[idx] = {data: dataStr, real: real, meta: meta}; }
-  else { historico.push({data: dataStr, real: real, meta: meta}); }
-  lssLojaObj('desemp-historico', historico);
-
-  if (cfg.url && cfg.key) {
-    sbPost('desempenho', {
-      promotor: cfg.promotor, loja: cfg.loja,
-      mes_referencia: hoje.toISOString().slice(0,7),
-      meta_mensal: meta, realizado: real
-    })
-    .then(function(r){ alert(r.ok ? '✓ Desempenho salvo no banco!' : '✓ Salvo localmente.'); })
-    .catch(function(){ alert('✓ Salvo localmente.'); });
-  } else {
-    alert('✓ Desempenho salvo!');
-  }
-  calcMeta();
-  renderDesempHistorico();
-  calcProjecao(real, meta);
-}
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
 
 // ─── DATA DE LANÇAMENTO ───────────────────────────────────────────────────────
-function salvarDataLancamento(val) { lssLoja('data-lancamento', val); }
-function carregarDataLancamento() {
-  var el = document.getElementById('home-data-lancamento');
-  if (!el) return;
-  var salva = lsLoja('data-lancamento');
-  el.value = salva || new Date().toISOString().slice(0,10);
-}
+
+
 
 // ─── EDITAR PRODUTO ───────────────────────────────────────────────────────────
 var editandoId = null;
-function editarProduto(id) {
-  var p = carregarProdutos().find(function(x){ return x.id===id; });
-  if (!p) return;
-  editandoId = id;
-  document.getElementById('np-nome').value   = p.nome;
-  document.getElementById('np-sku').value    = p.sku;
-  document.getElementById('np-minimo').value = p.minimo;
-  document.getElementById('np-preco').value  = p.preco_sugerido ? p.preco_sugerido.toFixed(2).replace('.',',') : '';
-  var elF = document.getElementById('np-fornecedor');
-  if (elF) elF.value = p.fornecedor || '';
-  var btn = document.querySelector('button[onclick="addProduto()"]');
-  if (btn) { btn.textContent = '✓ Salvar alteração'; btn.style.background = 'var(--blue)'; }
-  document.getElementById('np-nome').scrollIntoView({behavior:'smooth'});
-  setTimeout(function() {
-    if (p.lojas) {
-      document.querySelectorAll('#np-lojas-check div[data-loja]').forEach(function(d) {
-        if (p.lojas.indexOf(d.dataset.loja) !== -1 && d.getAttribute('data-sel') !== '1') toggleLojaOpt(d);
-      });
-    }
-  }, 400);
-}
-function cancelarEdicaoP() {
-  editandoId = null;
-  ['np-nome','np-sku','np-minimo','np-preco'].forEach(function(id){ document.getElementById(id).value=''; });
-  var elF = document.getElementById('np-fornecedor'); if (elF) elF.value='';
-  var btn = document.querySelector('button[onclick="addProduto()"]');
-  if (btn) { btn.textContent = '+ Adicionar produto'; btn.style.background = 'var(--brand)'; }
-}
+
+
 
 // ─── CADASTRO DE PRODUTOS ─────────────────────────────────────────────────────
-function addProduto() {
-  var nome  = document.getElementById('np-nome').value.trim();
-  var sku   = document.getElementById('np-sku').value.trim();
-  var min   = parseInt(document.getElementById('np-minimo').value);
-  var preco = parseFloat(document.getElementById('np-preco').value.replace(',','.'));
-  if (!nome) { alert('Informe o nome do produto.'); return; }
-  if (!sku)  { alert('Informe o SKU/código.'); return; }
-  if (isNaN(min)||min<1) { alert('Informe o estoque mínimo.'); return; }
-  // Coletar lojas selecionadas (novas divs clicáveis)
-  var lojasDivs = document.querySelectorAll('#np-lojas-check div[data-sel="1"]');
-  var lojasSel = [];
-  lojasDivs.forEach(function(d){ if(d.dataset.loja) lojasSel.push(d.dataset.loja); });
-  if (!lojasSel.length) { alert('Selecione pelo menos uma loja para este produto.'); return; }
-  var lista = carregarProdutos();
-  if (lista.find(function(p){ return p.sku===sku; })) { alert('SKU já cadastrado.'); return; }
-  var fornecedor = document.getElementById('np-fornecedor') ? document.getElementById('np-fornecedor').value.trim() : '';
-  // Modo edição — atualiza produto existente
-  if (editandoId) {
-    var lista2 = carregarProdutos();
-    var idx2 = lista2.findIndex(function(x){ return x.id===editandoId; });
-    if (idx2 >= 0) {
-      lista2[idx2].nome = nome; lista2[idx2].sku = sku; lista2[idx2].minimo = min;
-      lista2[idx2].preco_sugerido = isNaN(preco)?0:preco;
-      lista2[idx2].lojas = lojasSel;
-      var elF2 = document.getElementById('np-fornecedor');
-      lista2[idx2].fornecedor = elF2 ? elF2.value.trim() : '';
-      localStorage.setItem('cadastro-produtos', JSON.stringify(lista2));
-      var tok2 = ls('auth-token') || SUPABASE_KEY;
-      fetch(SUPABASE_URL + '/rest/v1/produtos?id=eq.' + editandoId, {
-        method: 'PATCH',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + tok2, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: nome, sku: sku, minimo: min, preco_sugerido: isNaN(preco)?0:preco, fornecedor: lista2[idx2].fornecedor })
-      }).then(function(r){ alert(r.ok ? '✓ Produto alterado!' : '✓ Alterado localmente!'); })
-        .catch(function(){ alert('✓ Alterado localmente!'); });
-    }
-    cancelarEdicaoP();
-    renderCadastroProdutos(); recarregarProdutos();
-    return;
-  }
-  var novoProduto = {
-    id: 'p'+Date.now(),
-    nome: nome, sku: sku, minimo: min,
-    preco_sugerido: isNaN(preco)?0:preco,
-    fornecedor: fornecedor,
-    lojas: lojasSel
-  };
-  lista.push(novoProduto);
-  localStorage.setItem('cadastro-produtos', JSON.stringify(lista));
-  document.getElementById('np-nome').value='';
-  document.getElementById('np-sku').value='';
-  document.getElementById('np-minimo').value='';
-  document.getElementById('np-preco').value='';
-  var elForn = document.getElementById('np-fornecedor');
-  if (elForn) elForn.value='';
-  renderCadastroProdutos();
-  recarregarProdutos();
-  // Salvar no Supabase com UPSERT — se SKU já existe, atualiza
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (sbUrl && sbKey) {
-    fetch(sbUrl + '/rest/v1/produtos', {
-      method: 'POST',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({
-        id: novoProduto.id,
-        nome: novoProduto.nome,
-        sku: novoProduto.sku,
-        minimo: novoProduto.minimo,
-        preco_sugerido: novoProduto.preco_sugerido
-      })
-    }).then(function(r) {
-      alert(r.ok ? '✓ Produto salvo no banco!' : '✓ Produto cadastrado localmente.');
-    }).catch(function() {
-      alert('✓ Cadastrado!');
-    });
-  } else {
-    alert('✓ Produto cadastrado localmente!\n\nConfigure o Supabase em ⚙️ Config para salvar no banco.');
-  }
-}
 
-function removeProduto(id) {
-  var todos = carregarProdutos();
-  var produto = todos.find(function(p){ return p.id===id; });
-  var lista = todos.filter(function(p){ return p.id!==id; });
-  localStorage.setItem('cadastro-produtos', JSON.stringify(lista));
-  var concs = carregarConcorrentes().filter(function(c){ return c.produto_id!==id; });
-  localStorage.setItem('cadastro-concorrentes', JSON.stringify(concs));
-  renderCadastroProdutos();
-  renderCadastroConcorrentes();
-  recarregarProdutos();
-  // Remover do Supabase pelo SKU (chave única)
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (sbUrl && sbKey && produto) {
-    fetch(sbUrl + '/rest/v1/produtos?sku=eq.' + encodeURIComponent(produto.sku), {
-      method: 'DELETE',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json'
-      }
-    }).then(function(r) {
-      if (!r.ok) console.error('Erro ao remover produto do banco');
-    }).catch(function(e){ console.error(e); });
-  }
-}
 
-function renderCadastroProdutos() {
-  var lista = carregarProdutos();
-  var el = document.getElementById('lista-produtos-cfg');
-  if (!el) return;
-  if (!lista.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum produto cadastrado.</div>';
-    renderNpLojasCheck();
-    return;
-  }
-  el.innerHTML = lista.map(function(p) {
-    var lojas = p.lojas && p.lojas.length ? p.lojas.join(', ') : '<span style="color:var(--amber)">Nenhuma loja vinculada</span>';
-    return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-        '<div style="flex:1">' +
-          '<div style="font-size:13px;font-weight:600;color:var(--text)">' + p.nome + '</div>' +
-          '<div style="font-size:11px;color:var(--text3);margin-top:1px">' + p.sku + (p.fornecedor?' · '+p.fornecedor:'') + ' · Mín: ' + p.minimo + ' · R$ ' + p.preco_sugerido.toFixed(2).replace('.',',') + '</div>' +
-          '<div style="font-size:11px;margin-top:3px">🏪 ' + lojas + '</div>' +
-        '</div>' +
-        '<div style="display:flex;gap:4px;flex-shrink:0">' +'<button data-id="' + p.id + '" onclick="editarProduto(this.dataset.id)" style="background:var(--brand-light);color:var(--brand);border:1px solid var(--brand);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">Editar</button>' +'<button data-id="' + p.id + '" onclick="removeProduto(this.dataset.id)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">Remover</button>' +'</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-  // Atualizar select do concorrente
-  var sel = document.getElementById('nc-meu-produto');
-  if (sel) {
-    sel.innerHTML = '<option value="">Selecione o produto</option>' +
-      lista.map(function(p){ return '<option value="'+p.id+'">'+p.nome+'</option>'; }).join('');
-  }
-  renderNpLojasCheck();
-}
 
-function renderNpLojasCheck() {
-  var lojas = carregarLojas();
-  var el = document.getElementById('np-lojas-check');
-  if (!el) return;
-  if (!lojas.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--text3);font-style:italic">Cadastre lojas em "Minhas lojas" para selecionar</div>';
-    return;
-  }
-  el.innerHTML = '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Toque para selecionar uma ou mais lojas:</div>' +
-    lojas.map(function(l, idx) {
-      return '<div id="loja-opt-' + idx + '" data-loja="' + l.nome + '" data-sel="0" ' +
-        'onclick="toggleLojaOpt(this)" ' +
-        'style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;' +
-        'background:var(--bg);border-radius:var(--radius-sm);border:2px solid var(--border);' +
-        'margin-bottom:8px;transition:border-color 0.15s,background 0.15s;-webkit-tap-highlight-color:transparent">' +
-        '<div id="loja-box-' + idx + '" style="width:24px;height:24px;border-radius:6px;border:2px solid var(--border);' +
-        'background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:700;color:#000"></div>' +
-        '<div>' +
-          '<div style="font-size:14px;font-weight:600;color:var(--text)">' + l.nome + '</div>' +
-          '<div style="font-size:11px;color:var(--text3)">' + (l.rede||'Outra') + (l.cidade?' · '+l.cidade:'') + '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-}
 
-function toggleLojaOpt(el) {
-  var sel = el.getAttribute('data-sel') === '1';
-  var idx = el.id.replace('loja-opt-','');
-  var box = document.getElementById('loja-box-' + idx);
-  if (!sel) {
-    el.setAttribute('data-sel','1');
-    el.style.borderColor = 'var(--brand)';
-    el.style.background  = 'var(--brand-light)';
-    if (box) { box.style.background='var(--brand)'; box.style.borderColor='var(--brand)'; box.textContent='✓'; }
-  } else {
-    el.setAttribute('data-sel','0');
-    el.style.borderColor = 'var(--border)';
-    el.style.background  = 'var(--bg)';
-    if (box) { box.style.background='var(--surface2)'; box.style.borderColor='var(--border)'; box.textContent=''; }
-  }
-}
 
-function toggleLojaCheck(label) { toggleLojaOpt(label); }
+
+
+
+
+
+
 
 // ─── CADASTRO DE CONCORRENTES ─────────────────────────────────────────────────
-function addConcorrente() {
-  var pid     = document.getElementById('nc-meu-produto').value;
-  var empresa = document.getElementById('nc-empresa').value.trim();
-  var similar = (document.getElementById('nc-similar') || {}).value || '';
-  similar = similar.trim();
-  if (!pid)     { alert('Selecione o produto próprio.'); return; }
-  if (!empresa) { alert('Informe a empresa concorrente.'); return; }
-  if (!similar) { alert('Informe o produto similar.'); return; }
-  var lista = carregarConcorrentes();
-  lista = lista.filter(function(c){ return c.produto_id!==pid; });
-  var novoConc = { id: 'c'+Date.now(), produto_id: pid, empresa: empresa, produto_similar: similar };
-  lista.push(novoConc);
-  localStorage.setItem('cadastro-concorrentes', JSON.stringify(lista));
-  document.getElementById('nc-meu-produto').value='';
-  document.getElementById('nc-empresa').value='';
-  document.getElementById('nc-similar').value='';
-  renderCadastroConcorrentes();
-  recarregarProdutos();
-  // Salvar no Supabase
-  sbPost('concorrentes', {
-    id: novoConc.id,
-    produto_id: novoConc.produto_id,
-    empresa: novoConc.empresa,
-    produto_similar: novoConc.produto_similar
-  }).then(function(r) {
-    alert(r && r.ok ? '✓ Similar cadastrado e salvo no banco!' : '✓ Similar cadastrado localmente!');
-  }).catch(function() {
-    alert('✓ Similar cadastrado!');
-  });
-}
-
-function removeConcorrente(id) {
-  var lista = carregarConcorrentes().filter(function(c){ return c.id !== id; });
-  localStorage.setItem('cadastro-concorrentes', JSON.stringify(lista));
-  renderCadastroConcorrentes();
-  recarregarProdutos();
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (sbUrl && sbKey) {
-    fetch(sbUrl + '/rest/v1/concorrentes?id=eq.' + encodeURIComponent(id), {
-      method: 'DELETE',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json'
-      }
-    }).catch(function(e){ console.error('Erro ao deletar concorrente:', e); });
-  }
-}
-
-function renderCadastroConcorrentes() {
-  var lista = carregarConcorrentes();
-  var prods = carregarProdutos();
-  var el = document.getElementById('lista-conc-cfg');
-  if (!el) return;
-  if (!lista.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhum similar cadastrado.</div>';
-    return;
-  }
-  el.innerHTML = lista.map(function(c) {
-    var p = prods.find(function(x){ return x.id===c.produto_id; });
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">' +
-      '<div>' +
-        '<div style="font-size:12px;font-weight:500;color:var(--brand)">'+(p?p.nome:'—')+'</div>' +
-        '<div style="font-size:12px;color:var(--text);margin-top:2px">↔ '+(c.produto_similar||c.similar||'—')+'</div>' +
-        '<div style="font-size:11px;color:var(--text3);margin-top:1px">'+c.empresa+'</div>' +
-      '</div>' +
-      '<button data-id="'+c.id+'" onclick="removeConcorrente(this.dataset.id)" style="background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Remover</button>' +
-    '</div>';
-  }).join('');
-}
-
-function sincronizarProdutos() {
-  var sbUrl = SUPABASE_URL;
-  var sbKey = SUPABASE_KEY;
-  var token = ls('auth-token') || sbKey;
-  var lista = carregarProdutos();
-  if (!lista.length) { alert('Nenhum produto cadastrado.'); return; }
-
-  var payload = lista.map(function(p) {
-    return { id: p.id, nome: p.nome, sku: p.sku, minimo: p.minimo, preco_sugerido: p.preco_sugerido };
-  });
-
-  fetch(sbUrl + '/rest/v1/produtos', {
-    method: 'POST',
-    headers: {
-      'apikey': sbKey,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates,return=minimal'
-    },
-    body: JSON.stringify(payload)
-  }).then(function(r) {
-    if (r.ok) {
-      // Sincronizar também os concorrentes
-      var concs = carregarConcorrentes();
-      if (concs.length) {
-        var concPayload = concs.map(function(c) {
-          return { id: c.id, produto_id: c.produto_id, empresa: c.empresa, produto_similar: c.produto_similar || c.similar || '' };
-        });
-        return fetch(sbUrl + '/rest/v1/concorrentes', {
-          method: 'POST',
-          headers: {
-            'apikey': sbKey,
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json',
-            'Prefer': 'resolution=merge-duplicates,return=minimal'
-          },
-          body: JSON.stringify(concPayload)
-        }).then(function(r2) {
-          alert(r2.ok
-            ? '✓ Sincronizado! ' + lista.length + ' produto(s) e ' + concs.length + ' similar(es) enviados ao banco.'
-            : '✓ Produtos salvos. Erro ao salvar similares.');
-        });
-      }
-      alert('✓ ' + lista.length + ' produto(s) sincronizado(s) com o banco!');
-    } else {
-      r.text().then(function(t){ alert('Erro ao sincronizar: ' + t.slice(0,150)); });
-    }
-  }).catch(function(e){ alert('Erro de conexão: ' + e); });
-}
-
-function recarregarProdutos() {
-  produtos = getProdutos();
-  renderEstoque();
-  renderConcorrentes();
-  renderSelectAvaria();
-  renderDesempProdutos();
-  renderDesempHistorico();
-  var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
-  if(fr2||fm2) calcProjecao(fr2, fm2);
-  atualizarHome();
-}
 
 
-function previewMeta() {
-  var meta = parseFloat(document.getElementById('cfg-meta').value) || 0;
-  var real = parseFloat(document.getElementById('cfg-realizado').value) || 0;
-  var preview = document.getElementById('cfg-meta-preview');
-  if (!preview) return;
-  if (!meta) { preview.style.display = 'none'; return; }
-  preview.style.display = 'block';
 
-  var falta = Math.max(0, meta - real);
-  var pct   = Math.min(100, Math.round((real / meta) * 100));
 
-  // Dias úteis restantes
-  var hoje = new Date();
-  var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
-  var diasRestantes = 0;
-  for (var d = hoje.getDate(); d <= ultimoDia; d++) {
-    var diaSemana = new Date(hoje.getFullYear(), hoje.getMonth(), d).getDay();
-    if (diaSemana !== 0 && diaSemana !== 6) diasRestantes++;
-  }
-  diasRestantes = Math.max(1, diasRestantes);
-  var diario = Math.ceil(falta / diasRestantes);
 
-  var diaEl = document.getElementById('cfg-meta-dia');
-  var pctEl = document.getElementById('cfg-meta-pct');
-  var barEl = document.getElementById('cfg-meta-bar');
-  if (diaEl) diaEl.textContent = 'R$ ' + diario.toLocaleString('pt-BR');
-  if (pctEl) {
-    pctEl.textContent = pct + '%';
-    pctEl.style.color = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--red)';
-  }
-  if (barEl) {
-    barEl.style.width = pct + '%';
-    barEl.style.background = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--brand)';
-  }
-}
-function salvarPerfil(){
-  lss('promotor-nome',document.getElementById('cfg-nome').value.trim());
-  // loja agora é gerenciada pelo sistema de múltiplas lojas
-  var meta = document.getElementById('cfg-meta').value.trim();
-  var real = document.getElementById('cfg-realizado').value.trim();
-  if (meta) {
-    lss('fat-meta', meta); lssLoja('fat-meta', meta);
-    // Sincronizar com campo da tela desempenho
-    var elMeta = document.getElementById('fat-meta-input');
-    if (elMeta) elMeta.value = meta;
-  }
-  if (real) {
-    lss('fat-real', real); lssLoja('fat-real', real);
-    var elReal = document.getElementById('fat-real-input');
-    if (elReal) elReal.value = real;
-  }
-  syncLoja();
-  calcMeta();
-  alert('✓ Perfil e meta salvos!');
-}
 
-function salvarSupabase(){
-  var url = document.getElementById('cfg-sb-url').value.trim();
-  var key = document.getElementById('cfg-sb-key').value.trim();
-  if (!url || !key) { alert('Preencha a URL e a chave.'); return; }
-  // Garantir que a URL não tem barra no final
-  url = url.replace(/\/+$/, '');
-  lss('sb-url', url);
-  lss('sb-key', key);
-  alert('✓ Supabase salvo! Toque em "Testar conexão agora" para verificar.');
-}
 
-function testarConexaoSupabase() {
-  var url = ls('sb-url');
-  var key = ls('sb-key');
-  var res = document.getElementById('sb-teste-resultado');
-  res.style.display = 'block';
-  res.style.background = 'var(--surface2)';
-  res.style.color = 'var(--text2)';
-  res.textContent = '⏳ Testando conexão...';
 
-  if (!url || !key) {
-    res.style.background = 'var(--red-bg)';
-    res.style.color = 'var(--red)';
-    res.textContent = '✕ URL ou chave não configurados. Preencha e salve primeiro.';
-    return;
-  }
 
-  // Testar fazendo uma leitura simples na tabela produtos
-  fetch(url + '/rest/v1/produtos?limit=1', {
-    method: 'GET',
-    headers: {
-      'apikey': key,
-      'Authorization': 'Bearer ' + key,
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(function(r) {
-    if (r.ok) {
-      res.style.background = 'var(--green-bg)';
-      res.style.color = 'var(--green)';
-      res.textContent = '✓ Conexão com Supabase funcionando! Os dados serão salvos no banco.';
-    } else {
-      r.text().then(function(t) {
-        res.style.background = 'var(--red-bg)';
-        res.style.color = 'var(--red)';
-        if (r.status === 401) {
-          res.textContent = '✕ Chave inválida (erro 401). Use a chave eyJ... da aba "Legacy anon" no Supabase.';
-        } else if (r.status === 404) {
-          res.textContent = '✕ URL incorreta (erro 404). Verifique a URL do projeto no Supabase → Settings → General.';
-        } else {
-          res.textContent = '✕ Erro ' + r.status + ': ' + t.slice(0, 150);
-        }
-      });
-    }
-  })
-  .catch(function(e) {
-    res.style.background = 'var(--red-bg)';
-    res.style.color = 'var(--red)';
-    res.textContent = '✕ Falha de rede: ' + e + '. Verifique sua internet.';
-  });
-}
+
+
+
+
+
+
+
+
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 // ─── TOGGLE TEMA ─────────────────────────────────────────────────────────────
-function toggleTema() {
-  var isLight = document.body.classList.toggle('light');
-  lss('tema', isLight ? 'light' : 'dark');
-  var icon = document.getElementById('theme-icon');
-  var lbl  = document.getElementById('theme-lbl');
-  if (icon) icon.textContent = isLight ? '☀️' : '🌙';
-  if (lbl)  lbl.textContent  = isLight ? 'LIGHT' : 'DARK';
-  // Atualizar meta theme-color
-  var meta = document.querySelector('meta[name=theme-color]');
-  if (meta) meta.content = isLight ? '#FFFFFF' : '#14213D';
-}
+
 
 function initApp() {
   // Restaurar tema salvo
@@ -2580,41 +2025,7 @@ function initApp() {
   atualizarHome();
 }
 
-window.onload = function() {
-  // Esconder nav e todas as telas até o login
-  var nav = document.getElementById('main-nav');
-  if (nav) nav.style.display = 'none';
-  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  // Restaurar tema antes do login (para não piscar)
-  if (ls('tema') === 'light') {
-    document.body.classList.add('light');
-  }
-  // Máscara CPF e Enter no campo senha
-  var cpfEl = document.getElementById('login-email');
-  if (cpfEl) {
-    cpfEl.oninput = function() {
-      var v = this.value.replace(/\D/g,'').slice(0,11);
-      if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
-      else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
-      else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
-      this.value = v;
-    };
-    cpfEl.onkeydown = function(e) {
-      if (e.key === 'Enter') {
-        var s = document.getElementById('login-senha');
-        if (s) s.focus();
-      }
-    };
-  }
-  var senhaEl = document.getElementById('login-senha');
-  if (senhaEl) {
-    senhaEl.onkeydown = function(e) {
-      if (e.key === 'Enter') fazerLogin();
-    };
-  }
-  // Verificar sessão
-  verificarSessao();
-}
+
 
 // ─── SALVAR EXPOSIÇÃO ─────────────────────────────────────────────────────────
 function salvarExposicao() {
@@ -3218,73 +2629,10 @@ function toggleTema() {
   if (meta) meta.content = isLight ? '#FFFFFF' : '#14213D';
 }
 
-function initApp() {
-  // Restaurar tema salvo
-  if (ls('tema') === 'light') {
-    document.body.classList.add('light');
-    var icon = document.getElementById('theme-icon');
-    var lbl  = document.getElementById('theme-lbl');
-    if (icon) icon.textContent = '☀️';
-    if (lbl)  lbl.textContent  = 'LIGHT';
-    var meta = document.querySelector('meta[name=theme-color]');
-    if (meta) meta.content = '#FFFFFF';
-  }
-  // Preencher campos Config
-  var cfgMap = { 'promotor-nome':'cfg-nome', 'fat-meta':'cfg-meta', 'fat-real':'cfg-realizado' };
-  Object.keys(cfgMap).forEach(function(k){
-    var v=ls(k); var el=document.getElementById(cfgMap[k]);
-    if(v&&el) el.value=v;
-  });
-  renderLojas();
-  syncLoja();
-  carregarEstadoLoja();
-  carregarDataLancamento();
-  produtos = getProdutos();
-  renderCadastroProdutos();
-  renderCadastroConcorrentes();
-  renderEstoque();
-  renderConcorrentes();
-  renderFotosExposicao();
-  renderSelectAvaria();
-  renderDesempProdutos();
-  renderDesempHistorico();
-  var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
-  if(fr2||fm2) calcProjecao(fr2, fm2);
-  atualizarHome();
-}
 
-window.onload = function() {
-  // Esconder nav e todas as telas até o login
-  var nav = document.getElementById('main-nav');
-  if (nav) nav.style.display = 'none';
-  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  // Restaurar tema antes do login (para não piscar)
-  if (ls('tema') === 'light') {
-    document.body.classList.add('light');
-  }
-  // Máscara CPF e Enter no campo senha
-  var cpfEl = document.getElementById('login-email');
-  if (cpfEl) {
-    cpfEl.oninput = function() {
-      var v = this.value.replace(/\D/g,'').slice(0,11);
-      if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
-      else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
-      else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
-      this.value = v;
-    };
-    cpfEl.onkeydown = function(e) {
-      if (e.key === 'Enter') {
-        var s = document.getElementById('login-senha');
-        if (s) s.focus();
-      }
-    };
-  }
-  var senhaEl = document.getElementById('login-senha');
-  if (senhaEl) {
-    senhaEl.onkeydown = function(e) {
-      if (e.key === 'Enter') fazerLogin();
-    };
-  }
-  // Verificar sessão
-  verificarSessao();
-};
+
+
+
+</script>
+</body>
+</html>
