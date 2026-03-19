@@ -861,56 +861,85 @@ function cpfParaEmail(cpf) {
 function fazerLogin() {
   var cpf   = (document.getElementById('login-email').value || '').trim();
   var senha = (document.getElementById('login-senha').value || '').trim();
-  var errEl = document.getElementById('login-error');
 
-  // Limpar erro anterior
-  if (errEl) { errEl.style.display='none'; errEl.textContent=''; }
-
-  // Validação básica
-  if (!cpf || !senha) {
-    mostrarErroLogin('Preencha o CPF e a senha.');
-    return;
-  }
+  if (!cpf || !senha) { mostrarErroLogin('Preencha o CPF e a senha.'); return; }
 
   var cpfLimpo = cpf.replace(/\D/g,'');
   var btnEl    = document.getElementById('login-btn');
   var loadEl   = document.getElementById('login-loading');
+  var errEl    = document.getElementById('login-error');
+  if (errEl)  { errEl.style.display='none'; errEl.textContent=''; }
   if (btnEl)  btnEl.disabled = true;
   if (loadEl) { loadEl.style.display='block'; loadEl.textContent='⏳ Verificando...'; }
 
-  // Consultar tabela promotores
-  var url = SUPABASE_URL + '/rest/v1/promotores?select=*&cpf=eq.' + cpfLimpo + '&senha=eq.' + encodeURIComponent(senha) + '&ativo=eq.true';
-
-  fetch(url, {
+  // Testar conexão com o banco primeiro
+  fetch(SUPABASE_URL + '/rest/v1/promotores?select=cpf&cpf=eq.' + cpfLimpo, {
+    method: 'GET',
     headers: {
       'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json'
     }
   })
-  .then(function(resp) {
-    if (btnEl)  btnEl.disabled = false;
-    if (loadEl) loadEl.style.display = 'none';
-    return resp.json().then(function(dados) {
-      if (dados && dados.length > 0) {
-        var p = dados[0];
+  .then(function(r) {
+    if (!r.ok) {
+      return r.text().then(function(t) {
+        throw new Error('HTTP ' + r.status + ': ' + t.slice(0,100));
+      });
+    }
+    return r.json();
+  })
+  .then(function(rows) {
+    if (!rows || rows.length === 0) {
+      // CPF não encontrado
+      if (btnEl)  btnEl.disabled = false;
+      if (loadEl) loadEl.style.display = 'none';
+      mostrarErroLogin('CPF não cadastrado. Verifique com seu gestor.');
+      return;
+    }
+    // CPF existe — verificar senha
+    fetch(SUPABASE_URL + '/rest/v1/promotores?select=*&cpf=eq.' + cpfLimpo + '&senha=eq.' + encodeURIComponent(senha) + '&ativo=eq.true', {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(function(r2) { return r2.json(); })
+    .then(function(resultado) {
+      if (btnEl)  btnEl.disabled = false;
+      if (loadEl) loadEl.style.display = 'none';
+      if (resultado && resultado.length > 0) {
+        var p = resultado[0];
         lss('auth-cpf', cpf);
         lss('auth-token', SUPABASE_KEY);
         lss('promotor-nome', p.nome || cpfLimpo);
         lss('promotor-id', String(p.id || ''));
         if (p.loja && !ls('promotor-loja')) lss('promotor-loja', p.loja);
         entrarNoApp();
-      } else if (dados && dados.code) {
-        mostrarErroLogin('Erro banco: ' + (dados.message || dados.code));
       } else {
-        mostrarErroLogin('CPF ou senha incorretos.');
+        mostrarErroLogin('Senha incorreta. Tente novamente.');
       }
+    })
+    .catch(function(e2) {
+      if (btnEl)  btnEl.disabled = false;
+      if (loadEl) loadEl.style.display = 'none';
+      mostrarErroLogin('Erro ao verificar senha: ' + String(e2));
     });
   })
-  .catch(function(err) {
+  .catch(function(e) {
     if (btnEl)  btnEl.disabled = false;
     if (loadEl) loadEl.style.display = 'none';
-    mostrarErroLogin('Sem conexão: ' + String(err));
+    mostrarErroLogin('Erro de conexão: ' + String(e));
   });
+}
+
+function mostrarErroLogin(msg) {
+  var el = document.getElementById('login-error');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+  // Também mostrar via alert para garantir visibilidade
+  alert(msg);
 }
 
 function mostrarErroLogin(msg) {
