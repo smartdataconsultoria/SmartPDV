@@ -917,11 +917,12 @@ function fazerLogin() {
 
 function entrarNoApp() {
   document.getElementById('sc-login').style.display = 'none';
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('sc-home').classList.add('active');
-  document.querySelector('.nav').style.display = 'flex';
-  syncLoja();
+  var nav = document.querySelector('.nav');
+  if (nav) nav.style.display = 'flex';
+  initApp();
   calcMeta();
-  atualizarHome();
 }
 
 function verificarSessao() {
@@ -2543,22 +2544,7 @@ function toggleTema() {
   if (meta) meta.content = isLight ? '#FFFFFF' : '#14213D';
 }
 
-window.onload = function() {
-  // Esconder nav até fazer login
-  var nav = document.querySelector('.nav');
-  if (nav) nav.style.display = 'none';
-  // Verificar se já tem sessão ativa
-  verificarSessao();
-  var cfgMap = {
-    'promotor-nome':'cfg-nome',
-    'fat-meta':'cfg-meta','fat-real':'cfg-realizado',
-    'sb-url':'cfg-sb-url','sb-key':'cfg-sb-key'
-  };
-  Object.keys(cfgMap).forEach(function(k){
-    var v=ls(k); var el=document.getElementById(cfgMap[k]);
-    if(v&&el) el.value=v;
-  });
-  // meta carregada por carregarEstadoLoja()
+function initApp() {
   // Restaurar tema salvo
   if (ls('tema') === 'light') {
     document.body.classList.add('light');
@@ -2569,11 +2555,16 @@ window.onload = function() {
     var meta = document.querySelector('meta[name=theme-color]');
     if (meta) meta.content = '#FFFFFF';
   }
+  // Preencher campos Config
+  var cfgMap = { 'promotor-nome':'cfg-nome', 'fat-meta':'cfg-meta', 'fat-real':'cfg-realizado' };
+  Object.keys(cfgMap).forEach(function(k){
+    var v=ls(k); var el=document.getElementById(cfgMap[k]);
+    if(v&&el) el.value=v;
+  });
   renderLojas();
   syncLoja();
   carregarEstadoLoja();
   carregarDataLancamento();
-  // Carregar produtos do localStorage
   produtos = getProdutos();
   renderCadastroProdutos();
   renderCadastroConcorrentes();
@@ -2586,6 +2577,19 @@ window.onload = function() {
   var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
   if(fr2||fm2) calcProjecao(fr2, fm2);
   atualizarHome();
+}
+
+window.onload = function() {
+  // Esconder nav e todas as telas até o login
+  var nav = document.querySelector('.nav');
+  if (nav) nav.style.display = 'none';
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  // Restaurar tema antes do login (para não piscar)
+  if (ls('tema') === 'light') {
+    document.body.classList.add('light');
+  }
+  // Verificar sessão
+  verificarSessao();
 }
 
 // ─── SALVAR EXPOSIÇÃO ─────────────────────────────────────────────────────────
@@ -3190,22 +3194,7 @@ function toggleTema() {
   if (meta) meta.content = isLight ? '#FFFFFF' : '#14213D';
 }
 
-window.onload = function() {
-  // Esconder nav até fazer login
-  var nav = document.querySelector('.nav');
-  if (nav) nav.style.display = 'none';
-  // Verificar se já tem sessão ativa
-  verificarSessao();
-  var cfgMap = {
-    'promotor-nome':'cfg-nome',
-    'fat-meta':'cfg-meta','fat-real':'cfg-realizado',
-    'sb-url':'cfg-sb-url','sb-key':'cfg-sb-key'
-  };
-  Object.keys(cfgMap).forEach(function(k){
-    var v=ls(k); var el=document.getElementById(cfgMap[k]);
-    if(v&&el) el.value=v;
-  });
-  // meta carregada por carregarEstadoLoja()
+function initApp() {
   // Restaurar tema salvo
   if (ls('tema') === 'light') {
     document.body.classList.add('light');
@@ -3216,11 +3205,16 @@ window.onload = function() {
     var meta = document.querySelector('meta[name=theme-color]');
     if (meta) meta.content = '#FFFFFF';
   }
+  // Preencher campos Config
+  var cfgMap = { 'promotor-nome':'cfg-nome', 'fat-meta':'cfg-meta', 'fat-real':'cfg-realizado' };
+  Object.keys(cfgMap).forEach(function(k){
+    var v=ls(k); var el=document.getElementById(cfgMap[k]);
+    if(v&&el) el.value=v;
+  });
   renderLojas();
   syncLoja();
   carregarEstadoLoja();
   carregarDataLancamento();
-  // Carregar produtos do localStorage
   produtos = getProdutos();
   renderCadastroProdutos();
   renderCadastroConcorrentes();
@@ -3233,4 +3227,17 @@ window.onload = function() {
   var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
   if(fr2||fm2) calcProjecao(fr2, fm2);
   atualizarHome();
+}
+
+window.onload = function() {
+  // Esconder nav e todas as telas até o login
+  var nav = document.querySelector('.nav');
+  if (nav) nav.style.display = 'none';
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  // Restaurar tema antes do login (para não piscar)
+  if (ls('tema') === 'light') {
+    document.body.classList.add('light');
+  }
+  // Verificar sessão
+  verificarSessao();
 };
