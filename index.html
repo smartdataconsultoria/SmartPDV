@@ -1725,13 +1725,14 @@ function salvarEstoque() {
   var promotor = cfg.promotor || ls('promotor-nome') || '';
   var loja     = cfg.loja     || ls('promotor-loja') || '';
 
-  // Para cada produto, verificar se já existe e fazer upsert
-  var promessas = produtos.map(function(p) {
+  // Para cada produto — upsert nativo do Supabase usando a constraint estoque_unique_dia
+  // A constraint é: UNIQUE (promotor, loja, sku, data_registro::date AT TIME ZONE SP)
+  // O Prefer: resolution=merge-duplicates faz UPDATE automático se já existir
+  var registros = produtos.map(function(p) {
     var gon   = parseInt(estGondola[p.id]) || 0;
     var sis   = parseInt(estSistema[p.id]) || 0;
     var preco = precoProp[p.id] ? parseFloat(String(precoProp[p.id]).replace(',','.')) : null;
-
-    var payload = {
+    return {
       promotor:          promotor,
       loja:              loja,
       produto_nome:      p.nome,
@@ -1740,42 +1741,20 @@ function salvarEstoque() {
       qtd_gondola:       gon,
       preco_encontrado:  preco,
       preco_sugerido:    p.preco_sugerido || 0,
-      data_registro:     hoje
+      data_registro:     hoje + 'T12:00:00-03:00'
     };
-
-    // Buscar se já existe registro para hoje + promotor + loja + sku
-    // data_registro é timestamp — filtrar pelo dia completo no fuso de Brasília (UTC-3)
-    var query = '?promotor=eq.' + encodeURIComponent(promotor) +
-                '&loja=eq.'     + encodeURIComponent(loja) +
-                '&sku=eq.'      + encodeURIComponent(p.sku) +
-                '&data_registro=gte.' + hoje + 'T00:00:00-03:00' +
-                '&data_registro=lte.' + hoje + 'T23:59:59-03:00' +
-                '&select=id&limit=1';
-
-    return fetch(SUPABASE_URL + '/rest/v1/estoque' + query, {
-      method: 'GET',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(dados) {
-      if (Array.isArray(dados) && dados.length > 0) {
-        // ✅ JÁ EXISTE HOJE — atualizar (PATCH)
-        var id = dados[0].id;
-        return fetch(SUPABASE_URL + '/rest/v1/estoque?id=eq.' + id, {
-          method: 'PATCH',
-          headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify(payload)
-        });
-      } else {
-        // ✅ NÃO EXISTE HOJE — inserir (POST)
-        return fetch(SUPABASE_URL + '/rest/v1/estoque', {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify(payload)
-        });
-      }
-    });
   });
+
+  var promessas = [fetch(SUPABASE_URL + '/rest/v1/estoque', {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPABASE_KEY,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type':  'application/json',
+      'Prefer':        'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(registros)
+  })];
 
   Promise.all(promessas)
     .then(function(respostas) {
