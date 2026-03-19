@@ -968,9 +968,26 @@ function fazerLogout() {
   if (se) se.value = '';
 }
 
-// Enter no campo de senha faz login
-// Máscara CPF e eventos de teclado — inicializados no window.onload
-
+window.onload = function() {
+  var nav = document.getElementById('main-nav');
+  if (nav) nav.style.display = 'none';
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  if (ls('tema') === 'light') document.body.classList.add('light');
+  var cpfEl = document.getElementById('login-email');
+  if (cpfEl) {
+    cpfEl.oninput = function() {
+      var v = this.value.replace(/\D/g,'').slice(0,11);
+      if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');
+      else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
+      else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
+      this.value = v;
+    };
+    cpfEl.onkeydown = function(e){ if(e.key==='Enter'){ var s=document.getElementById('login-senha'); if(s)s.focus(); } };
+  }
+  var senhaEl = document.getElementById('login-senha');
+  if (senhaEl) senhaEl.onkeydown = function(e){ if(e.key==='Enter') fazerLogin(); };
+  verificarSessao();
+};
 
 // ─── DADOS DE PRODUTOS ───────────────────────────────────────────────────────
 // Produtos carregados do localStorage (cadastrados em Config)
