@@ -859,82 +859,63 @@ function cpfParaEmail(cpf) {
 }
 
 function fazerLogin() {
-  var cpf    = document.getElementById('login-email').value.trim();
-  var senha  = document.getElementById('login-senha').value.trim();
-  var errEl  = document.getElementById('login-error');
-  var loadEl = document.getElementById('login-loading');
-  var btnEl  = document.getElementById('login-btn');
+  var cpf   = (document.getElementById('login-email').value || '').trim();
+  var senha = (document.getElementById('login-senha').value || '').trim();
+  var errEl = document.getElementById('login-error');
 
-  errEl.style.display  = 'none';
-  errEl.textContent    = '';
+  // Limpar erro anterior
+  if (errEl) { errEl.style.display='none'; errEl.textContent=''; }
 
+  // Validação básica
   if (!cpf || !senha) {
-    errEl.textContent  = 'Preencha o CPF e a senha.';
-    errEl.style.display = 'block';
+    mostrarErroLogin('Preencha o CPF e a senha.');
     return;
   }
 
-  // Limpar CPF para comparar
-  var cpfLimpo = cpf.replace(/\D/g, '');
+  var cpfLimpo = cpf.replace(/\D/g,'');
+  var btnEl    = document.getElementById('login-btn');
+  var loadEl   = document.getElementById('login-loading');
+  if (btnEl)  btnEl.disabled = true;
+  if (loadEl) { loadEl.style.display='block'; loadEl.textContent='⏳ Verificando...'; }
 
-  btnEl.disabled       = true;
-  loadEl.style.display = 'block';
-  loadEl.textContent   = '⏳ Verificando...';
+  // Consultar tabela promotores
+  var url = SUPABASE_URL + '/rest/v1/promotores?select=*&cpf=eq.' + cpfLimpo + '&senha=eq.' + encodeURIComponent(senha) + '&ativo=eq.true';
 
-  var concluido = false;
-  var timeout = setTimeout(function() {
-    if (!concluido) {
-      concluido = true;
-      btnEl.disabled       = false;
-      loadEl.style.display = 'none';
-      errEl.textContent    = 'Tempo esgotado. Verifique sua internet.';
-      errEl.style.display  = 'block';
-    }
-  }, 10000);
-
-  // Buscar promotor na tabela pelo CPF e senha
-  fetch(SUPABASE_URL + '/rest/v1/promotores?cpf=eq.' + cpfLimpo + '&senha=eq.' + encodeURIComponent(senha) + '&ativo=eq.true&select=*', {
-    method: 'GET',
+  fetch(url, {
     headers: {
       'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/json'
+      'Authorization': 'Bearer ' + SUPABASE_KEY
     }
   })
-  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, status: r.status, data: d }; }); })
-  .then(function(res) {
-    clearTimeout(timeout);
-    if (concluido) return;
-    concluido = true;
-    btnEl.disabled       = false;
-    loadEl.style.display = 'none';
-
-    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
-      var promotor = res.data[0];
-      // Login OK — salvar sessão local
-      lss('auth-token', SUPABASE_KEY); // usar anon key como token
-      lss('auth-cpf', cpf);
-      lss('promotor-id', promotor.id || '');
-      lss('promotor-nome', promotor.nome || cpfLimpo);
-      lss('promotor-loja', ls('promotor-loja') || promotor.loja || '');
-      entrarNoApp();
-    } else if (res.ok && Array.isArray(res.data) && res.data.length === 0) {
-      errEl.textContent   = 'CPF ou senha incorretos. Verifique e tente novamente.';
-      errEl.style.display = 'block';
-    } else {
-      errEl.textContent   = 'Erro ' + res.status + ': ' + JSON.stringify(res.data).slice(0, 100);
-      errEl.style.display = 'block';
-    }
+  .then(function(resp) {
+    if (btnEl)  btnEl.disabled = false;
+    if (loadEl) loadEl.style.display = 'none';
+    return resp.json().then(function(dados) {
+      if (dados && dados.length > 0) {
+        var p = dados[0];
+        lss('auth-cpf', cpf);
+        lss('auth-token', SUPABASE_KEY);
+        lss('promotor-nome', p.nome || cpfLimpo);
+        lss('promotor-id', String(p.id || ''));
+        if (p.loja && !ls('promotor-loja')) lss('promotor-loja', p.loja);
+        entrarNoApp();
+      } else if (dados && dados.code) {
+        mostrarErroLogin('Erro banco: ' + (dados.message || dados.code));
+      } else {
+        mostrarErroLogin('CPF ou senha incorretos.');
+      }
+    });
   })
-  .catch(function(e) {
-    clearTimeout(timeout);
-    if (concluido) return;
-    concluido = true;
-    btnEl.disabled       = false;
-    loadEl.style.display = 'none';
-    errEl.textContent    = 'Erro de conexão: ' + String(e);
-    errEl.style.display  = 'block';
+  .catch(function(err) {
+    if (btnEl)  btnEl.disabled = false;
+    if (loadEl) loadEl.style.display = 'none';
+    mostrarErroLogin('Sem conexão: ' + String(err));
   });
+}
+
+function mostrarErroLogin(msg) {
+  var el = document.getElementById('login-error');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
 }
 
 function entrarNoApp() {
