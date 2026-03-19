@@ -885,7 +885,7 @@ function fazerLogin() {
     },
     body: JSON.stringify({ email: cpfParaEmail(email), password: senha })
   })
-  .then(function(r) { return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(r) { return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
   .then(function(res) {
     btnEl.disabled = false;
     loadEl.style.display = 'none';
@@ -903,14 +903,19 @@ function fazerLogin() {
       lss('auth-cpf', email);
       entrarNoApp();
     } else {
-      errEl.textContent = res.data.error_description || res.data.msg || 'E-mail ou senha incorretos.';
+      var msg = '';
+      if (res.status === 400) msg = 'CPF ou senha incorretos. Verifique e tente novamente.';
+      else if (res.status === 422) msg = 'Formato inválido. Verifique o CPF.';
+      else if (res.status === 429) msg = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+      else msg = res.data.error_description || res.data.message || res.data.msg || ('Erro ' + res.status + ': verifique suas credenciais.');
+      errEl.textContent = msg;
       errEl.style.display = 'block';
     }
   })
-  .catch(function() {
+  .catch(function(e) {
     btnEl.disabled = false;
     loadEl.style.display = 'none';
-    errEl.textContent = 'Erro de conexão. Verifique sua internet.';
+    errEl.textContent = 'Erro de conexão. Verifique sua internet e tente novamente.';
     errEl.style.display = 'block';
   });
 }
@@ -935,12 +940,17 @@ function verificarSessao() {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
     })
     .then(function(r) {
-      if (r.ok) { entrarNoApp(); }
-      else { lss('auth-token',''); mostrarLogin(); }
+      if (r.ok) {
+        entrarNoApp();
+      } else {
+        lss('auth-token','');
+        mostrarLogin();
+      }
     })
     .catch(function() {
-      // Sem internet — entrar mesmo assim se tiver token
-      entrarNoApp();
+      // Sem internet — entrar com token salvo
+      if (ls('auth-token')) entrarNoApp();
+      else mostrarLogin();
     });
   } else {
     mostrarLogin();
