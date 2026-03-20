@@ -2189,7 +2189,66 @@ function salvarDesempenho() {
 
 
 // ─── DATA DE LANÇAMENTO ───────────────────────────────────────────────────────
-function salvarDataLancamento(val) { lssLoja('data-lancamento', val); }
+function salvarDataLancamento(val) {
+  lssLoja('data-lancamento', val);
+  var hoje = new Date().toISOString().slice(0,10);
+
+  if (val === hoje) {
+    // Voltou para hoje — limpar campos para novo lançamento
+    limparEstoqueParaHoje();
+    renderEstoque();
+    return;
+  }
+
+  // Data diferente de hoje — buscar lançamentos do banco para essa data
+  var loja     = ls('promotor-loja') || '';
+  var promotor = ls('promotor-nome') || '';
+  var token    = ls('auth-token') || SUPABASE_KEY;
+
+  var url = SUPABASE_URL + '/rest/v1/estoque?select=sku,produto_nome,qtd_sistema,qtd_gondola,preco_encontrado' +
+    '&loja=eq.' + encodeURIComponent(loja) +
+    '&promotor=eq.' + encodeURIComponent(promotor) +
+    '&data_registro=gte.' + val + 'T00:00:00' +
+    '&data_registro=lte.' + val + 'T23:59:59';
+
+  fetch(url, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + token
+    }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(dados) {
+    if (!dados || !dados.length) {
+      alert('Nenhum lançamento encontrado para ' + val + '.');
+      return;
+    }
+    // Preencher os campos com os dados históricos
+    estSistema = {}; estGondola = {}; precoProp = {};
+    dados.forEach(function(row) {
+      // Encontrar produto pelo SKU
+      var p = produtos.find(function(x){ return x.sku === row.sku; });
+      if (!p) return;
+      if (row.qtd_sistema !== null) estSistema[p.id] = row.qtd_sistema;
+      if (row.qtd_gondola !== null) estGondola[p.id] = row.qtd_gondola;
+      if (row.preco_encontrado !== null) precoProp[p.id] = String(row.preco_encontrado).replace('.',',');
+    });
+    renderEstoque();
+    // Atualizar inputs
+    produtos.forEach(function(p) {
+      var sisEl = document.getElementById('sis-' + p.id);
+      var gonEl = document.getElementById('gon-' + p.id);
+      var ppEl  = document.getElementById('pp-'  + p.id);
+      if (sisEl && estSistema[p.id] !== undefined) sisEl.value = estSistema[p.id];
+      if (gonEl && estGondola[p.id] !== undefined) gonEl.value = estGondola[p.id];
+      if (ppEl  && precoProp[p.id])                ppEl.value  = precoProp[p.id];
+    });
+    alert('✓ Lançamentos de ' + val + ' carregados!');
+  })
+  .catch(function(e) {
+    alert('Erro ao buscar histórico: ' + e);
+  });
+}
 function carregarDataLancamento() {
   var el = document.getElementById('home-data-lancamento');
   if (!el) return;
