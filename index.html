@@ -1040,14 +1040,18 @@ var expoChecks  = 0;
 
 // ─── CARREGAR/SALVAR ESTADO POR LOJA ─────────────────────────────────────────
 function limparEstoqueParaHoje() {
-  // Limpar campos de estoque se já foram salvos hoje (novo dia = novo lançamento)
   var hoje = new Date().toISOString().slice(0,10);
-  var ultimoSalvo = lsLoja('est-ultimo-save');
+  var ultimoSalvo = lsLoja('est-ultimo-save') || '';
   if (ultimoSalvo !== hoje) {
-    // Novo dia — limpar campos para lançamento fresco
-    estSistema = {}; estGondola = {}; precoProp = {};
+    // Novo dia — zerar tudo em memória
+    estSistema = {};
+    estGondola = {};
+    precoProp  = {};
+    // Zerar também no localStorage da loja
+    lssLojaObj('estoque', { sistema: {}, gondola: {}, preco: {}, conc: precoConc });
+    // Registrar o dia atual
     lssLoja('est-ultimo-save', hoje);
-    salvarEstadoLoja();
+    console.log('Novo dia detectado — campos de estoque limpos para lançamento fresco');
   }
 }
 
@@ -1178,6 +1182,7 @@ function selecionarLoja(id) {
   var fill = document.getElementById('exp-fill'); if (fill) fill.style.width='0%';
   setTxt('exp-pct','0%'); setTxt('exp-lbl','0 de 8 itens');
   carregarEstadoLoja();
+  limparEstoqueParaHoje();
   renderDesempHistorico();
   syncLoja();
   renderLojas();
