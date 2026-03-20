@@ -2221,14 +2221,20 @@ function salvarDataLancamento(val) {
   var hoje = new Date().toISOString().slice(0,10);
 
   if (val === hoje) {
-    // Hoje — limpar para novo lançamento e ir para estoque
-    limparEstoqueParaHoje();
+    // Voltou para hoje — zerar tudo em memória e no estado
+    estSistema = {}; estGondola = {}; precoProp = {};
+    lssLojaObj('estoque', { sistema:{}, gondola:{}, preco:{}, conc: precoConc });
     renderEstoque();
+    // Atualizar inputs para blank
+    setTimeout(function() {
+      document.querySelectorAll('.fis-input').forEach(function(el){ el.value = ''; });
+      document.querySelectorAll('.preco-mini').forEach(function(el){ el.value = ''; });
+    }, 100);
     navTo('estoque');
     return;
   }
 
-  // Data anterior — buscar no banco e ir para estoque
+  // Data anterior — buscar no banco
   var loja  = ls('promotor-loja') || '';
   var token = ls('auth-token') || SUPABASE_KEY;
 
@@ -2240,10 +2246,7 @@ function salvarDataLancamento(val) {
     '&order=data_registro.desc';
 
   fetch(url, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + token
-    }
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
   })
   .then(function(r) { return r.json(); })
   .then(function(dados) {
@@ -2252,12 +2255,9 @@ function salvarDataLancamento(val) {
       return;
     }
     processarDadosHistorico(dados, val);
-    // Navegar para tela de estoque após carregar
     navTo('estoque');
   })
-  .catch(function(e) {
-    alert('Erro: ' + String(e));
-  });
+  .catch(function(e) { alert('Erro: ' + String(e)); });
 }
 function carregarDataLancamento() {
   var el = document.getElementById('home-data-lancamento');
