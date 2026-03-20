@@ -1918,6 +1918,14 @@ function sbConfig() {
 function salvarEstoque() {
   var cfg = sbConfig();
 
+  // Bloquear lançamento para data futura
+  var hoje = new Date().toISOString().slice(0,10);
+  var dataLanc = lsLoja('data-lancamento') || hoje;
+  if (dataLanc > hoje) {
+    alert('Não é permitido salvar estoque para datas futuras.\nData selecionada: ' + dataLanc);
+    return;
+  }
+
   // Validação: todos os campos obrigatórios
   var faltando = [];
   produtos.forEach(function(p) {
@@ -2239,6 +2247,14 @@ function processarDadosHistorico(dados, val) {
 }
 
 function salvarDataLancamento(val) {
+  // Bloquear data futura
+  var hoje = new Date().toISOString().slice(0,10);
+  if (val > hoje) {
+    alert('Não é permitido lançar estoque para datas futuras.');
+    var el = document.getElementById('home-data-lancamento');
+    if (el) { el.value = hoje; el.max = hoje; }
+    return;
+  }
   lssLoja('data-lancamento', val);
 
   // Sempre limpar campos primeiro
@@ -2285,9 +2301,9 @@ function salvarDataLancamento(val) {
 function carregarDataLancamento() {
   var el = document.getElementById('home-data-lancamento');
   if (!el) return;
-  // Sempre abrir com a data de hoje — ignorar data salva
   var hoje = new Date().toISOString().slice(0,10);
   el.value = hoje;
+  el.max   = hoje; // Bloquear datas futuras no calendário
   lssLoja('data-lancamento', hoje);
 }
 
