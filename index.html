@@ -1041,17 +1041,15 @@ var expoChecks  = 0;
 // ─── CARREGAR/SALVAR ESTADO POR LOJA ─────────────────────────────────────────
 function limparEstoqueParaHoje() {
   var hoje = new Date().toISOString().slice(0,10);
-  var ultimoSalvo = lsLoja('est-ultimo-save') || '';
-  if (ultimoSalvo !== hoje) {
-    // Novo dia — zerar tudo em memória
+  // Verificar data do ultimo LANÇAMENTO REAL no banco (não histórico consultado)
+  var ultimoLancamento = lsLoja('est-ultimo-lancamento') || '';
+  if (ultimoLancamento !== hoje) {
+    // Novo dia — zerar tudo
     estSistema = {};
     estGondola = {};
     precoProp  = {};
-    // Zerar também no localStorage da loja
-    lssLojaObj('estoque', { sistema: {}, gondola: {}, preco: {}, conc: precoConc });
-    // Registrar o dia atual
-    lssLoja('est-ultimo-save', hoje);
-    console.log('Novo dia detectado — campos de estoque limpos para lançamento fresco');
+    lssLojaObj('estoque', { sistema:{}, gondola:{}, preco:{}, conc: precoConc||{} });
+    console.log('Novo dia (' + hoje + ') — estoque limpo. Ultimo lancamento: ' + ultimoLancamento);
   }
 }
 
@@ -1959,8 +1957,10 @@ function salvarEstoque() {
   })
   .then(function(r) {
     if (r.ok) {
-      // Gravar histórico local para mostrar saldo anterior no próximo dia
+      // Registrar data do ultimo lancamento REAL no banco
       var hoje = new Date().toISOString().slice(0,10);
+      lssLoja('est-ultimo-lancamento', hoje);
+      // Gravar historico local
       var histKey = 'est-historico-' + (ls('promotor-loja')||'');
       var historico = JSON.parse(localStorage.getItem(histKey) || '{}');
       produtos.forEach(function(p) {
@@ -1972,7 +1972,6 @@ function salvarEstoque() {
         };
       });
       localStorage.setItem(histKey, JSON.stringify(historico));
-      // Limpar campos para o promotor lançar novamente amanhã
       alert('✓ Estoque salvo!');
       atualizarHome();
       renderEstoque();
