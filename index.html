@@ -838,8 +838,11 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
   <button class="ni"        id="ni-exposicao"    onclick="navTo('exposicao')">   <span class="ni-icon">🏪</span>Exposição</button>
   <button class="ni"        id="ni-concorrentes" onclick="navTo('concorrentes')"><span class="ni-icon">🏁</span>Concorr.</button>
   <button class="ni"        id="ni-avarias"      onclick="navTo('avarias')">     <span class="ni-icon">⚠️</span>Avarias</button>
-  <button class="ni"        id="ni-oportunidades" onclick="navTo('oportunidades')"><span class="ni-
+    <button class="ni"        id="ni-oportunidades" onclick="navTo('oportunidades')"><span class="ni-icon">💡</span>Oprtun.</button>
+  <button class="ni"        id="ni-config"       onclick="navTo('config')">      <span class="ni-icon">⚙️</span>Config</button>
+</nav>
 
+<script>
 // ─── AUTENTICAÇÃO ────────────────────────────────────────────────────────────
 // Credenciais Supabase — fixas no código
 var SUPABASE_URL = 'https://tnaasnshthzyvbfxxerg.supabase.co';
@@ -2869,20 +2872,6 @@ function toggleTema() {
   var meta = document.querySelector('meta[name=theme-color]');
   if (meta) meta.content = isLight ? '#FFFFFF' : '#14213D';
 }
-
-
-
-
-
-T' : 'DARK';
-  // Atualizar meta theme-color
-  var meta = document.querySelector('meta[name=theme-color]');
-  if (meta) meta.content = isLight ? '#FFFFFF' : '#14213D';
-}
-
-
-
-
 
 </script>
 </body>
