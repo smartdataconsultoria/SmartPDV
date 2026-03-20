@@ -2247,17 +2247,20 @@ function processarDadosHistorico(dados, val) {
 }
 
 function salvarDataLancamento(val) {
-  // Bloquear data futura
   var hoje = new Date().toISOString().slice(0,10);
+  var el   = document.getElementById('home-data-lancamento');
+
+  // Bloquear data futura ANTES de fazer qualquer coisa
   if (val > hoje) {
-    alert('Não é permitido lançar estoque para datas futuras.');
-    var el = document.getElementById('home-data-lancamento');
+    alert('Não é permitido lançar para datas futuras.\nSelecione até ' + hoje + '.');
     if (el) { el.value = hoje; el.max = hoje; }
+    // Não limpar campos — manter o que estava
     return;
   }
+
   lssLoja('data-lancamento', val);
 
-  // Sempre limpar campos primeiro
+  // Limpar campos em memória
   estSistema = {}; estGondola = {}; precoProp = {};
 
   // Buscar no banco o que foi lançado nessa data
@@ -2270,25 +2273,23 @@ function salvarDataLancamento(val) {
   .then(function(r) { return r.json(); })
   .then(function(dados) {
     if (dados && Array.isArray(dados) && dados.length > 0) {
-      // Preencher com dados do banco
       dados.forEach(function(row) {
         var p = produtos.find(function(x){ return x.sku === row.sku; });
         if (!p) return;
-        if (row.qtd_sistema    != null) estSistema[p.id] = row.qtd_sistema;
-        if (row.qtd_gondola    != null) estGondola[p.id] = row.qtd_gondola;
-        if (row.preco_encontrado != null) precoProp[p.id] = String(row.preco_encontrado).replace('.',',');
+        if (row.qtd_sistema     != null) estSistema[p.id] = row.qtd_sistema;
+        if (row.qtd_gondola     != null) estGondola[p.id] = row.qtd_gondola;
+        if (row.preco_encontrado != null) precoProp[p.id]  = String(row.preco_encontrado).replace('.',',');
       });
     }
-    // Renderizar (com dados ou em branco)
     renderEstoque();
     setTimeout(function() {
       produtos.forEach(function(p) {
-        var s = document.getElementById('sis-'+p.id);
-        var g = document.getElementById('gon-'+p.id);
+        var s  = document.getElementById('sis-'+p.id);
+        var g  = document.getElementById('gon-'+p.id);
         var pp = document.getElementById('pp-'+p.id);
         if (s)  s.value  = estSistema[p.id] !== undefined ? estSistema[p.id] : '';
         if (g)  g.value  = estGondola[p.id] !== undefined ? estGondola[p.id] : '';
-        if (pp) pp.value = precoProp[p.id]  || '';
+        if (pp) pp.value = precoProp[p.id]   || '';
       });
     }, 150);
     navTo('estoque');
