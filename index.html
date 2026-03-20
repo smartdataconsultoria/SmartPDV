@@ -458,7 +458,10 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
   <div id="lista-est"></div>
 
   <div class="ph" style="padding-bottom:12px">
-    <button class="btn btn-p" onclick="salvarEstoque()">Salvar estoque & preços</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-p" style="flex:1" onclick="salvarEstoque()">Salvar estoque & preços</button>
+      <button class="btn btn-o" style="flex:1" onclick="editarLancamento()">✏️ Corrigir lançamento</button>
+    </div>
   </div>
 </div>
 
@@ -835,11 +838,7 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
   <button class="ni"        id="ni-exposicao"    onclick="navTo('exposicao')">   <span class="ni-icon">🏪</span>Exposição</button>
   <button class="ni"        id="ni-concorrentes" onclick="navTo('concorrentes')"><span class="ni-icon">🏁</span>Concorr.</button>
   <button class="ni"        id="ni-avarias"      onclick="navTo('avarias')">     <span class="ni-icon">⚠️</span>Avarias</button>
-  <button class="ni"        id="ni-oportunidades" onclick="navTo('oportunidades')"><span class="ni-icon">💡</span>Oprtun.</button>
-  <button class="ni"        id="ni-config"       onclick="navTo('config')">      <span class="ni-icon">⚙️</span>Config</button>
-</nav>
-
-<script>
+  <button class="ni"        id="ni-oportunidades" onclick="navTo('oportunidades')"><span class="ni-
 
 // ─── AUTENTICAÇÃO ────────────────────────────────────────────────────────────
 // Credenciais Supabase — fixas no código
@@ -1093,6 +1092,82 @@ function limparEstoqueLocalStorage() {
   estSistema={}; estGondola={}; precoProp={};
   renderEstoque();
   alert('✓ Cache de estoque limpo! (' + keysParaRemover.length + ' chaves removidas)');
+}
+
+
+// ─── CORRIGIR LANÇAMENTO ──────────────────────────────────────────────────────
+function editarLancamento() {
+  var dataLanc = lsLoja('data-lancamento') || new Date().toISOString().slice(0,10);
+  var hoje     = new Date().toISOString().slice(0,10);
+  var loja     = ls('promotor-loja') || '';
+  var token    = ls('auth-token') || SUPABASE_KEY;
+
+  // Verificar se há campos preenchidos para corrigir
+  var temDados = produtos.some(function(p) {
+    return estSistema[p.id] !== undefined || estGondola[p.id] !== undefined;
+  });
+  if (!temDados) {
+    alert('Preencha os campos com os valores corretos antes de corrigir.');
+    return;
+  }
+
+  if (!confirm('Isso vai SUBSTITUIR o lançamento de ' + dataLanc + ' pelos valores atuais na tela.\nDeseja continuar?')) return;
+
+  // Deletar registros do dia selecionado para esta loja
+  var urlDelete = SUPABASE_URL + '/rest/v1/estoque' +
+    '?loja=eq.' + encodeURIComponent(loja) +
+    '&data_registro=gte.' + dataLanc + 'T00:00:00.000Z' +
+    '&data_registro=lte.' + dataLanc + 'T23:59:59.999Z';
+
+  fetch(urlDelete, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
+  })
+  .then(function(r) {
+    if (!r.ok) {
+      return r.text().then(function(t){ throw new Error('Erro ao remover: ' + t); });
+    }
+    // Inserir novos registros
+    var registros = [];
+    produtos.forEach(function(p) {
+      var sis   = parseInt(estSistema[p.id]) || 0;
+      var gon   = parseInt(estGondola[p.id]) || 0;
+      var preco = precoProp[p.id] ? parseFloat(String(precoProp[p.id]).replace(',','.')) : null;
+      registros.push({
+        promotor:         ls('promotor-nome') || '',
+        loja:             loja,
+        produto_nome:     p.nome,
+        sku:              p.sku,
+        qtd_sistema:      sis,
+        qtd_gondola:      gon,
+        preco_encontrado: preco,
+        preco_sugerido:   p.preco_sugerido || 0
+      });
+    });
+    return fetch(SUPABASE_URL + '/rest/v1/estoque', {
+      method: 'POST',
+      headers: {
+        'apikey':        SUPABASE_KEY,
+        'Authorization': 'Bearer ' + token,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal'
+      },
+      body: JSON.stringify(registros)
+    });
+  })
+  .then(function(r) {
+    if (r && r.ok) {
+      lssLoja('est-ultimo-lancamento', dataLanc);
+      alert('✓ Lançamento de ' + dataLanc + ' corrigido com sucesso!');
+      atualizarHome();
+      renderEstoque();
+    } else if (r) {
+      r.text().then(function(t){ alert('Erro ao salvar correção: ' + t.slice(0,150)); });
+    }
+  })
+  .catch(function(e) {
+    alert('Erro: ' + String(e));
+  });
 }
 
 // ─── CLOCK ───────────────────────────────────────────────────────────────────
@@ -2790,6 +2865,16 @@ function toggleTema() {
   var lbl  = document.getElementById('theme-lbl');
   if (icon) icon.textContent = isLight ? '☀️' : '🌙';
   if (lbl)  lbl.textContent  = isLight ? 'LIGHT' : 'DARK';
+  // Atualizar meta theme-color
+  var meta = document.querySelector('meta[name=theme-color]');
+  if (meta) meta.content = isLight ? '#FFFFFF' : '#14213D';
+}
+
+
+
+
+
+T' : 'DARK';
   // Atualizar meta theme-color
   var meta = document.querySelector('meta[name=theme-color]');
   if (meta) meta.content = isLight ? '#FFFFFF' : '#14213D';
