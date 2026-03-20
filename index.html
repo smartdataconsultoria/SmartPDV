@@ -453,6 +453,7 @@ body.light .toggle-thumb{transform:translateX(16px);background:#000}
   <div class="ibox ibox-blue" style="margin-top:12px">
     💡 Lance o estoque no <strong>sistema</strong> (se tiver acesso) e na <strong>ponta de gôndola</strong>. O preço de cada produto pode ser preenchido aqui mesmo.
   </div>
+  <button onclick="limparEstoqueLocalStorage()" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;margin:4px 12px 0;cursor:pointer">🗑 Limpar cache local</button>
 
   <div id="lista-est"></div>
 
@@ -1076,6 +1077,23 @@ function salvarEstadoLoja() {
   lssLoja('expo-checks', expoChecks);
 }
 var expoTotal   = 8;
+
+
+// ─── LIMPEZA DE EMERGÊNCIA ────────────────────────────────────────────────────
+function limparEstoqueLocalStorage() {
+  // Remove TODAS as chaves de estoque do localStorage
+  var keysParaRemover = [];
+  for (var i = 0; i < localStorage.length; i++) {
+    var k = localStorage.key(i);
+    if (k && (k.indexOf(':estoque') !== -1 || k.indexOf('est-ultimo') !== -1)) {
+      keysParaRemover.push(k);
+    }
+  }
+  keysParaRemover.forEach(function(k){ localStorage.removeItem(k); });
+  estSistema={}; estGondola={}; precoProp={};
+  renderEstoque();
+  alert('✓ Cache de estoque limpo! (' + keysParaRemover.length + ' chaves removidas)');
+}
 
 // ─── CLOCK ───────────────────────────────────────────────────────────────────
 function tick() {
@@ -2034,7 +2052,7 @@ var editandoId = null;
 
 
 function initApp() {
-  // Restaurar tema salvo
+  // Restaurar tema
   if (ls('tema') === 'light') {
     document.body.classList.add('light');
     var icon = document.getElementById('theme-icon');
@@ -2044,7 +2062,7 @@ function initApp() {
     var meta = document.querySelector('meta[name=theme-color]');
     if (meta) meta.content = '#FFFFFF';
   }
-  // Preencher campos Config
+  // Config
   var cfgMap = { 'promotor-nome':'cfg-nome', 'fat-meta':'cfg-meta', 'fat-real':'cfg-realizado' };
   Object.keys(cfgMap).forEach(function(k){
     var v=ls(k); var el=document.getElementById(cfgMap[k]);
@@ -2052,9 +2070,24 @@ function initApp() {
   });
   renderLojas();
   syncLoja();
-  carregarEstadoLoja();
-  limparEstoqueParaHoje();
-  carregarDataLancamento();
+  // Estoque SEMPRE em branco — nunca carrega do localStorage
+  estSistema={}; estGondola={}; precoProp={};
+  precoConc  = lsLojaObj('estoque') ? (lsLojaObj('estoque').conc||{}) : {};
+  avarias       = lsLojaObj('avarias') || [];
+  oportunidades = lsLojaObj('oportunidades') || [];
+  expoChecks    = parseInt(lsLoja('expo-checks')||'0');
+  // Meta
+  var fr = lsLoja('fat-real')||''; var fm = lsLoja('fat-meta')||'';
+  var elR=document.getElementById('fat-real-input'); if(elR) elR.value=fr;
+  var elM=document.getElementById('fat-meta-input'); if(elM) elM.value=fm;
+  var elCR=document.getElementById('cfg-realizado'); if(elCR) elCR.value=fr;
+  var elCM=document.getElementById('cfg-meta');      if(elCM) elCM.value=fm;
+  calcMeta();
+  // Data de hoje no campo
+  var hoje = new Date().toISOString().slice(0,10);
+  var elData = document.getElementById('home-data-lancamento');
+  if (elData) elData.value = hoje;
+  // Produtos e renderização
   produtos = getProdutos();
   renderCadastroProdutos();
   renderCadastroConcorrentes();
