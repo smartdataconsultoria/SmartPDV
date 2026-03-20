@@ -2189,6 +2189,33 @@ function salvarDesempenho() {
 
 
 // ─── DATA DE LANÇAMENTO ───────────────────────────────────────────────────────
+
+function processarDadosHistorico(dados, val) {
+  estSistema = {}; estGondola = {}; precoProp = {};
+  dados.forEach(function(row) {
+    var p = produtos.find(function(x){ return x.sku === row.sku; });
+    if (!p) return;
+    if (row.qtd_sistema    !== null && row.qtd_sistema    !== undefined) estSistema[p.id] = row.qtd_sistema;
+    if (row.qtd_gondola    !== null && row.qtd_gondola    !== undefined) estGondola[p.id] = row.qtd_gondola;
+    if (row.preco_encontrado !== null && row.preco_encontrado !== undefined) {
+      precoProp[p.id] = String(row.preco_encontrado).replace('.',',');
+    }
+  });
+  renderEstoque();
+  // Preencher inputs após render
+  setTimeout(function() {
+    produtos.forEach(function(p) {
+      var sisEl = document.getElementById('sis-' + p.id);
+      var gonEl = document.getElementById('gon-' + p.id);
+      var ppEl  = document.getElementById('pp-'  + p.id);
+      if (sisEl && estSistema[p.id] !== undefined) sisEl.value = estSistema[p.id];
+      if (gonEl && estGondola[p.id] !== undefined) gonEl.value = estGondola[p.id];
+      if (ppEl  && precoProp[p.id])                ppEl.value  = precoProp[p.id];
+    });
+  }, 100);
+  alert('✓ ' + dados.length + ' produto(s) carregado(s) do dia ' + val);
+}
+
 function salvarDataLancamento(val) {
   lssLoja('data-lancamento', val);
   var hoje = new Date().toISOString().slice(0,10);
@@ -2205,11 +2232,12 @@ function salvarDataLancamento(val) {
   var promotor = ls('promotor-nome') || '';
   var token    = ls('auth-token') || SUPABASE_KEY;
 
-  var url = SUPABASE_URL + '/rest/v1/estoque?select=sku,produto_nome,qtd_sistema,qtd_gondola,preco_encontrado' +
+  // Buscar lançamentos do dia selecionado — usando cast para date
+  var url = SUPABASE_URL + '/rest/v1/estoque?select=sku,produto_nome,qtd_sistema,qtd_gondola,preco_encontrado,data_registro' +
     '&loja=eq.' + encodeURIComponent(loja) +
-    '&promotor=eq.' + encodeURIComponent(promotor) +
-    '&data_registro=gte.' + val + 'T00:00:00' +
-    '&data_registro=lte.' + val + 'T23:59:59';
+    '&data_registro=gte.' + val + 'T00:00:00.000Z' +
+    '&data_registro=lt.'  + val + 'T23:59:59.999Z' +
+    '&order=data_registro.desc';
 
   fetch(url, {
     headers: {
@@ -2220,30 +2248,24 @@ function salvarDataLancamento(val) {
   .then(function(r) { return r.json(); })
   .then(function(dados) {
     if (!dados || !dados.length) {
-      alert('Nenhum lançamento encontrado para ' + val + '.');
-      return;
+      // Tentar com fuso horário de Brasília (UTC-3)
+      var dtInicio = val + 'T03:00:00.000Z';
+      var dtFim    = val + 'T26:59:59.999Z';
+      var url2 = SUPABASE_URL + '/rest/v1/estoque?select=sku,produto_nome,qtd_sistema,qtd_gondola,preco_encontrado' +
+        '&loja=eq.' + encodeURIComponent(loja) +
+        '&data_registro=gte.' + dtInicio +
+        '&data_registro=lte.' + dtFim;
+      return fetch(url2, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } })
+        .then(function(r2) { return r2.json(); })
+        .then(function(dados2) {
+          if (!dados2 || !dados2.length) {
+            alert('Nenhum lancamento encontrado para ' + val + '. Verifique se o estoque foi salvo nesta data.');
+            return;
+          }
+          processarDadosHistorico(dados2, val);
+        });
     }
-    // Preencher os campos com os dados históricos
-    estSistema = {}; estGondola = {}; precoProp = {};
-    dados.forEach(function(row) {
-      // Encontrar produto pelo SKU
-      var p = produtos.find(function(x){ return x.sku === row.sku; });
-      if (!p) return;
-      if (row.qtd_sistema !== null) estSistema[p.id] = row.qtd_sistema;
-      if (row.qtd_gondola !== null) estGondola[p.id] = row.qtd_gondola;
-      if (row.preco_encontrado !== null) precoProp[p.id] = String(row.preco_encontrado).replace('.',',');
-    });
-    renderEstoque();
-    // Atualizar inputs
-    produtos.forEach(function(p) {
-      var sisEl = document.getElementById('sis-' + p.id);
-      var gonEl = document.getElementById('gon-' + p.id);
-      var ppEl  = document.getElementById('pp-'  + p.id);
-      if (sisEl && estSistema[p.id] !== undefined) sisEl.value = estSistema[p.id];
-      if (gonEl && estGondola[p.id] !== undefined) gonEl.value = estGondola[p.id];
-      if (ppEl  && precoProp[p.id])                ppEl.value  = precoProp[p.id];
-    });
-    alert('✓ Lançamentos de ' + val + ' carregados!');
+    processarDadosHistorico(dados, val);
   })
   .catch(function(e) {
     alert('Erro ao buscar histórico: ' + e);
@@ -2252,8 +2274,10 @@ function salvarDataLancamento(val) {
 function carregarDataLancamento() {
   var el = document.getElementById('home-data-lancamento');
   if (!el) return;
-  var salva = lsLoja('data-lancamento');
-  el.value = salva || new Date().toISOString().slice(0,10);
+  // Sempre abrir com a data de hoje — ignorar data salva
+  var hoje = new Date().toISOString().slice(0,10);
+  el.value = hoje;
+  lssLoja('data-lancamento', hoje);
 }
 
 // ─── EDITAR PRODUTO ───────────────────────────────────────────────────────────
