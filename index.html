@@ -1046,16 +1046,16 @@ function limparEstoqueParaHoje() {
 }
 
 function carregarEstadoLoja() {
-  var est = lsLojaObj('estoque') || {};
-  estSistema = est.sistema || {};
-  estGondola = est.gondola || {};
-  precoProp  = est.preco   || {};
-  precoConc  = est.conc    || {};
-  avarias    = lsLojaObj('avarias') || [];
+  // Estoque SEMPRE começa em branco — dados vêm do banco via data
+  estSistema = {};
+  estGondola = {};
+  precoProp  = {};
+  precoConc  = lsLojaObj('estoque') ? (lsLojaObj('estoque').conc || {}) : {};
+  avarias       = lsLojaObj('avarias') || [];
   oportunidades = lsLojaObj('oportunidades') || [];
-  expoChecks = parseInt(lsLoja('expo-checks') || '0');
+  expoChecks    = parseInt(lsLoja('expo-checks') || '0');
 
-  // Carregar meta da loja — limpar campos primeiro para evitar valores da loja anterior
+  // Meta da loja
   var fr = lsLoja('fat-real') || '';
   var fm = lsLoja('fat-meta') || '';
   var elR = document.getElementById('fat-real-input');
@@ -1337,13 +1337,11 @@ function onSis(pid) {
   var v = parseInt(document.getElementById('sis-'+pid).value);
   estSistema[pid] = isNaN(v)?undefined:v;
   calcDif(pid);
-  salvarEstadoLoja();
 }
 function onGon(pid) {
   var v = parseInt(document.getElementById('gon-'+pid).value);
   estGondola[pid] = isNaN(v)?undefined:v;
   calcDif(pid);
-  salvarEstadoLoja();
 }
 function calcDif(pid) {
   var el = document.getElementById('dif-'+pid);
