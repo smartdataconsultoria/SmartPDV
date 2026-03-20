@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Teste Histórico</title>
+<style>
+  body { font-family: monospace; padding: 20px; background: #111; color: #fff; }
+  input, select { padding:8px; margin:4px; background:#222; color:#fff; border:1px solid #444; border-radius:4px; font-size:14px; }
+  button { padding:10px 20px; background:#FCA311; color:#000; border:none; border-radius:6px; cursor:pointer; font-weight:bold; margin:4px; }
+  #log { background:#000; padding:12px; border-radius:6px; margin-top:12px; white-space:pre-wrap; font-size:12px; min-height:80px; border:1px solid #333; }
+  .ok  { color:#2ECC71; } .err { color:#FF4D6D; } .inf { color:#4DA3FF; }
+</style>
+</head>
+<body>
+<h2>🔍 Teste Histórico Estoque</h2>
+
+<div>
+  <label>Data: </label>
+  <input type="date" id="data" value="2026-03-18">
+  <label>Loja: </label>
+  <input type="text" id="loja" value="Loja 1">
+  <label>Promotor: </label>
+  <input type="text" id="promotor" value="Rafael">
+</div>
+<br>
+<button onclick="testar('exato')">Busca exata UTC</button>
+<button onclick="testar('brt')">Busca BRT (UTC-3)</button>
+<button onclick="testar('semfiltro')">Todos os registros</button>
+<button onclick="testar('somenteloja')">Só por loja</button>
+
+<div id="log">Clique em um botão...</div>
+
+<script>
+var URL = 'https://tnaasnshthzyvbfxxerg.supabase.co';
+var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuYWFzbnNodGh6eXZiZnh4ZXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1MzM0NjgsImV4cCI6MjA4OTEwOTQ2OH0.8iYQ6kAhNrtucanFCPfYrwNN18YmFeQ8JfwGPRUZxs4';
+
+function log(msg, cls) {
+  var el = document.getElementById('log');
+  var d = document.createElement('div');
+  d.className = cls||'';
+  d.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+  el.appendChild(d);
+}
+function limpar() { document.getElementById('log').innerHTML=''; }
+
+function testar(tipo) {
+  limpar();
+  var val  = document.getElementById('data').value;
+  var loja = document.getElementById('loja').value;
+  var prom = document.getElementById('promotor').value;
+  var url;
+
+  if (tipo === 'exato') {
+    url = URL + '/rest/v1/estoque?select=sku,produto_nome,qtd_sistema,qtd_gondola,data_registro' +
+      '&data_registro=gte.' + val + 'T00:00:00.000Z' +
+      '&data_registro=lte.' + val + 'T23:59:59.999Z';
+    log('Buscando UTC exato: ' + val + 'T00:00Z até ' + val + 'T23:59Z', 'inf');
+  } else if (tipo === 'brt') {
+    var prox = new Date(val + 'T00:00:00Z');
+    prox.setUTCDate(prox.getUTCDate()+1);
+    var proxStr = prox.toISOString().slice(0,10);
+    url = URL + '/rest/v1/estoque?select=sku,produto_nome,qtd_sistema,qtd_gondola,data_registro' +
+      '&data_registro=gte.' + val + 'T03:00:00.000Z' +
+      '&data_registro=lte.' + proxStr + 'T02:59:59.999Z';
+    log('Buscando BRT: ' + val + 'T03:00Z até ' + proxStr + 'T02:59Z', 'inf');
+  } else if (tipo === 'semfiltro') {
+    url = URL + '/rest/v1/estoque?select=sku,produto_nome,qtd_sistema,qtd_gondola,data_registro&limit=10&order=data_registro.desc';
+    log('Buscando últimos 10 registros sem filtro de data', 'inf');
+  } else {
+    url = URL + '/rest/v1/estoque?select=sku,produto_nome,qtd_sistema,qtd_gondola,data_registro' +
+      '&loja=eq.' + encodeURIComponent(loja) +
+      '&limit=10&order=data_registro.desc';
+    log('Buscando por loja: ' + loja, 'inf');
+  }
+
+  log('URL: ' + url, 'inf');
+
+  fetch(url, { headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY } })
+  .then(function(r) {
+    log('Status: ' + r.status, r.ok ? 'ok' : 'err');
+    return r.json();
+  })
+  .then(function(d) {
+    log('Resultado (' + (Array.isArray(d)?d.length:0) + ' registros):', Array.isArray(d)&&d.length?'ok':'err');
+    if (Array.isArray(d)) {
+      d.forEach(function(row, i) {
+        log('  ['+i+'] ' + row.produto_nome + ' | sis:' + row.qtd_sistema + ' gon:' + row.qtd_gondola + ' | ' + row.data_registro, 'inf');
+      });
+    } else {
+      log('  ' + JSON.stringify(d), 'err');
+    }
+  })
+  .catch(function(e) { log('Erro: ' + e, 'err'); });
+}
+</script>
+</body>
+</html>
