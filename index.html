@@ -2232,11 +2232,14 @@ function salvarDataLancamento(val) {
   var promotor = ls('promotor-nome') || '';
   var token    = ls('auth-token') || SUPABASE_KEY;
 
-  // Buscar lançamentos do dia selecionado — usando cast para date
+  // Buscar pelo fuso de Brasília (UTC-3): 03:00Z até 02:59Z do dia seguinte
+  var dtProxDia = new Date(val + 'T00:00:00Z');
+  dtProxDia.setUTCDate(dtProxDia.getUTCDate() + 1);
+  var dtProxStr = dtProxDia.toISOString().slice(0,10);
   var url = SUPABASE_URL + '/rest/v1/estoque?select=sku,produto_nome,qtd_sistema,qtd_gondola,preco_encontrado,data_registro' +
     '&loja=eq.' + encodeURIComponent(loja) +
-    '&data_registro=gte.' + val + 'T00:00:00.000Z' +
-    '&data_registro=lt.'  + val + 'T23:59:59.999Z' +
+    '&data_registro=gte.' + val + 'T03:00:00.000Z' +
+    '&data_registro=lte.' + dtProxStr + 'T02:59:59.999Z' +
     '&order=data_registro.desc';
 
   fetch(url, {
@@ -2248,13 +2251,17 @@ function salvarDataLancamento(val) {
   .then(function(r) { return r.json(); })
   .then(function(dados) {
     if (!dados || !dados.length) {
-      // Tentar com fuso horário de Brasília (UTC-3)
+      // Fuso horário de Brasília (UTC-3): dia começa às 03:00Z e termina às 02:59Z do dia seguinte
+      var dtProximo = new Date(val + 'T00:00:00Z');
+      dtProximo.setUTCDate(dtProximo.getUTCDate() + 1);
+      var dtProximoStr = dtProximo.toISOString().slice(0,10);
       var dtInicio = val + 'T03:00:00.000Z';
-      var dtFim    = val + 'T26:59:59.999Z';
+      var dtFim    = dtProximoStr + 'T02:59:59.999Z';
       var url2 = SUPABASE_URL + '/rest/v1/estoque?select=sku,produto_nome,qtd_sistema,qtd_gondola,preco_encontrado' +
         '&loja=eq.' + encodeURIComponent(loja) +
         '&data_registro=gte.' + dtInicio +
-        '&data_registro=lte.' + dtFim;
+        '&data_registro=lte.' + dtFim +
+        '&order=data_registro.desc';
       return fetch(url2, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } })
         .then(function(r2) { return r2.json(); })
         .then(function(dados2) {
