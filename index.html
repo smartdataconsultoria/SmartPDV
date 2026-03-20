@@ -2221,18 +2221,19 @@ function salvarDataLancamento(val) {
   var hoje = new Date().toISOString().slice(0,10);
 
   if (val === hoje) {
-    // Hoje — limpar para novo lancamento
+    // Hoje — limpar para novo lançamento e ir para estoque
     limparEstoqueParaHoje();
     renderEstoque();
+    navTo('estoque');
     return;
   }
 
-  // Data anterior — buscar no banco (mesmo filtro UTC que funcionou no teste)
+  // Data anterior — buscar no banco e ir para estoque
   var loja  = ls('promotor-loja') || '';
   var token = ls('auth-token') || SUPABASE_KEY;
 
   var url = SUPABASE_URL + '/rest/v1/estoque' +
-    '?select=sku,produto_nome,qtd_sistema,qtd_gondola,preco_encontrado,data_registro' +
+    '?select=sku,produto_nome,qtd_sistema,qtd_gondola,preco_encontrado' +
     '&loja=eq.' + encodeURIComponent(loja) +
     '&data_registro=gte.' + val + 'T00:00:00.000Z' +
     '&data_registro=lte.' + val + 'T23:59:59.999Z' +
@@ -2247,13 +2248,15 @@ function salvarDataLancamento(val) {
   .then(function(r) { return r.json(); })
   .then(function(dados) {
     if (!dados || !Array.isArray(dados) || dados.length === 0) {
-      alert('Nenhum lancamento encontrado para ' + val);
+      alert('Nenhum lançamento encontrado para ' + val + '.');
       return;
     }
     processarDadosHistorico(dados, val);
+    // Navegar para tela de estoque após carregar
+    navTo('estoque');
   })
   .catch(function(e) {
-    alert('Erro ao buscar historico: ' + String(e));
+    alert('Erro: ' + String(e));
   });
 }
 function carregarDataLancamento() {
