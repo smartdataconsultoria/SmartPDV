@@ -131,7 +131,7 @@ function carregarDadosDoBanco(promotorId, callback) {
   })
   .then(function(prods) {
     var lista = Array.isArray(prods) ? prods.map(function(p) {
-      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: Array.isArray(p.lojas) ? p.lojas : [] };
+      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: pgArray(p.lojas) };
     }) : [];
     localStorage.setItem(chProd, JSON.stringify(lista));
 
@@ -227,6 +227,26 @@ function getProdutos() {
 }
 
 // Busca produtos e concorrentes do banco e atualiza o cache em memória
+
+// Converte array PostgreSQL {val1,val2} ou JSON ["val1"] para array JS
+function pgArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    // Formato PostgreSQL: {"Fit Camisas -ZN","Fit Camisas -ZS"}
+    if (val.startsWith('{')) {
+      var inner = val.slice(1, -1);
+      if (!inner) return [];
+      return inner.split(',').map(function(s) {
+        return s.replace(/^"(.*)"$/, '$1').trim();
+      });
+    }
+    // Formato JSON string
+    try { return JSON.parse(val); } catch(e) { return []; }
+  }
+  return [];
+}
+
 function buscarProdutosDoBanco(callback) {
   var pid = ls('promotor-id') || '';
   if (!pid) { if (callback) callback(); return; }
@@ -244,7 +264,7 @@ function buscarProdutosDoBanco(callback) {
   ])
   .then(function(res) {
     _produtosCache = Array.isArray(res[0]) ? res[0].map(function(p) {
-      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: Array.isArray(p.lojas) ? p.lojas : [] };
+      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: pgArray(p.lojas) };
     }) : [];
     _concorrentesCache = Array.isArray(res[1]) ? res[1].map(function(c) {
       return { id: c.id, produto_id: c.produto_id, empresa: c.empresa||'', similar: c.produto_similar||'' };
