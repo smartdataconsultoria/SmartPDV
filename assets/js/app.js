@@ -1780,54 +1780,62 @@ function addProduto() {
     .catch(function() { alert('Erro de conexão.'); });
     return;
   }
+  var promotorId = ls('promotor-id') || '';
   var novoProduto = {
     id: gerarUUID(),
     nome: nome, sku: sku, minimo: min,
     preco_sugerido: isNaN(preco)?0:preco,
     fornecedor: fornecedor,
-    lojas: lojasSel
+    lojas: lojasSel,
+    promotor_id: promotorId
   };
-  var promotorId = ls('promotor-id') || '';
-  // Verificar duplicata no banco
-  fetch(SUPABASE_URL + '/rest/v1/produtos?select=id,nome&sku=eq.' + encodeURIComponent(sku) + '&promotor_id=eq.' + encodeURIComponent(promotorId), {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+
+  // Salvar direto no banco — sem verificar duplicata em cache
+  fetch(SUPABASE_URL + '/rest/v1/produtos', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({
+      id: novoProduto.id,
+      nome: novoProduto.nome,
+      sku: novoProduto.sku,
+      minimo: novoProduto.minimo,
+      preco_sugerido: novoProduto.preco_sugerido,
+      fornecedor: novoProduto.fornecedor,
+      lojas: novoProduto.lojas,
+      promotor_id: promotorId
+    })
   })
-  .then(function(r) { return r.json(); })
-  .then(function(exist) {
-    if (Array.isArray(exist) && exist.length > 0) {
-      alert('SKU ' + sku + ' ja existe: ' + exist[0].nome + '. Use Editar para alterar.');
-      return;
+  .then(function(r) {
+    if (r.ok) {
+      ['np-nome','np-sku','np-minimo','np-preco'].forEach(function(id){
+        var e = document.getElementById(id); if(e) e.value='';
+      });
+      var elForn = document.getElementById('np-fornecedor'); if(elForn) elForn.value='';
+      document.querySelectorAll('#np-lojas-check div[data-sel="1"]').forEach(function(d){ toggleLojaOpt(d); });
+      alert('✓ Produto "' + novoProduto.nome + '" cadastrado!');
+      buscarProdutosDoBanco(function() {
+        renderCadastroProdutos();
+        renderEstoque();
+        renderSelectAvaria();
+      });
+    } else {
+      r.text().then(function(t){
+        // Erro 23505 = chave duplicada no banco
+        if (t.indexOf('23505') !== -1) {
+          alert('SKU ' + sku + ' ja esta cadastrado. Use o botao Editar para alterar.');
+        } else {
+          alert('Erro ao salvar: ' + t.slice(0,120));
+        }
+      });
     }
-    lista.push(novoProduto);
-    localStorage.setItem(prodKey(), JSON.stringify(lista));
-    ['np-nome','np-sku','np-minimo','np-preco'].forEach(function(id){ var e=document.getElementById(id); if(e)e.value=''; });
-    var elForn=document.getElementById('np-fornecedor'); if(elForn)elForn.value='';
-    renderCadastroProdutos(); recarregarProdutos();
-    fetch(SUPABASE_URL + '/rest/v1/produtos', {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ id: novoProduto.id, nome: novoProduto.nome, sku: novoProduto.sku, minimo: novoProduto.minimo, preco_sugerido: novoProduto.preco_sugerido, fornecedor: novoProduto.fornecedor, promotor_id: promotorId })
-    })
-    .then(function(r) {
-      if (r.ok) {
-        alert('✓ Produto "' + novoProduto.nome + '" cadastrado!');
-        buscarProdutosDoBanco(function() {
-          renderCadastroProdutos();
-          renderEstoque();
-          renderSelectAvaria();
-        });
-      } else {
-        r.text().then(function(t){ alert('Erro ao salvar: ' + t.slice(0,100)); });
-      }
-    })
-    .catch(function() { alert('Erro de conexão ao salvar produto.'); });
   })
-  .catch(function() {
-    lista.push(novoProduto);
-    localStorage.setItem(prodKey(), JSON.stringify(lista));
-    ['np-nome','np-sku','np-minimo','np-preco'].forEach(function(id){ var e=document.getElementById(id); if(e)e.value=''; });
-    renderCadastroProdutos(); recarregarProdutos();
-    alert('✓ Produto salvo localmente!');
+  .catch(function(e) {
+    alert('Erro de conexao ao salvar produto: ' + e);
   });
 }
 
