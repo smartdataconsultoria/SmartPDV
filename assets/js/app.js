@@ -216,6 +216,7 @@ function carregarProdutos() { return _produtosCache; }
 function carregarConcorrentes() { return _concorrentesCache; }
 
 function getProdutos() {
+  // Retorna todos os produtos do promotor — sem filtro por loja
   return _produtosCache.map(function(p) {
     var conc = _concorrentesCache.find(function(c){ return c.produto_id === p.id; });
     return Object.assign({}, p, {
@@ -1709,11 +1710,14 @@ function editarProduto(id) {
   if (btn) { btn.textContent = '✓ Salvar alteração'; btn.style.background = 'var(--blue)'; }
   document.getElementById('np-nome').scrollIntoView({behavior:'smooth'});
   setTimeout(function() {
-    if (p.lojas) {
+    // Marcar lojas vinculadas ao produto na edição
+  if (p.lojas && p.lojas.length) {
+    setTimeout(function() {
       document.querySelectorAll('#np-lojas-check div[data-loja]').forEach(function(d) {
-        if (p.lojas.indexOf(d.dataset.loja) !== -1 && d.getAttribute('data-sel') !== '1') toggleLojaOpt(d);
+        if (p.lojas.indexOf(d.dataset.loja) !== -1) toggleLojaOpt(d);
       });
-    }
+    }, 200);
+  }
   }, 400);
 }
 function cancelarEdicaoP() {
@@ -1737,31 +1741,33 @@ function addProduto() {
   var lojasDivs = document.querySelectorAll('#np-lojas-check div[data-sel="1"]');
   var lojasSel = [];
   lojasDivs.forEach(function(d){ if(d.dataset.loja) lojasSel.push(d.dataset.loja); });
-  if (!lojasSel.length) { alert('Selecione pelo menos uma loja para este produto.'); return; }
+  // Lojas são opcionais — produto aparece em todas as lojas se nenhuma selecionada
   var lista = carregarProdutos();
   if (lista.find(function(p){ return p.sku===sku; })) { alert('SKU já cadastrado.'); return; }
   var fornecedor = document.getElementById('np-fornecedor') ? document.getElementById('np-fornecedor').value.trim() : '';
-  // Modo edição — atualiza produto existente
+  // Modo edição — atualiza produto no banco
   if (editandoId) {
-    var lista2 = carregarProdutos();
-    var idx2 = lista2.findIndex(function(x){ return x.id===editandoId; });
-    if (idx2 >= 0) {
-      lista2[idx2].nome = nome; lista2[idx2].sku = sku; lista2[idx2].minimo = min;
-      lista2[idx2].preco_sugerido = isNaN(preco)?0:preco;
-      lista2[idx2].lojas = lojasSel;
-      var elF2 = document.getElementById('np-fornecedor');
-      lista2[idx2].fornecedor = elF2 ? elF2.value.trim() : '';
-      localStorage.setItem(prodKey(), JSON.stringify(lista2));
-      var tok2 = ls('auth-token') || SUPABASE_KEY;
-      fetch(SUPABASE_URL + '/rest/v1/produtos?id=eq.' + editandoId, {
-        method: 'PATCH',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + tok2, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: nome, sku: sku, minimo: min, preco_sugerido: isNaN(preco)?0:preco, fornecedor: lista2[idx2].fornecedor })
-      }).then(function(r){ alert(r.ok ? '✓ Produto alterado!' : '✓ Alterado localmente!'); })
-        .catch(function(){ alert('✓ Alterado localmente!'); });
-    }
-    cancelarEdicaoP();
-    renderCadastroProdutos(); recarregarProdutos();
+    var elF2 = document.getElementById('np-fornecedor');
+    var forn2 = elF2 ? elF2.value.trim() : '';
+    fetch(SUPABASE_URL + '/rest/v1/produtos?id=eq.' + editandoId, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: nome, sku: sku, minimo: min, preco_sugerido: isNaN(preco)?0:preco, fornecedor: forn2 })
+    })
+    .then(function(r) {
+      if (r.ok) {
+        alert('✓ Produto alterado!');
+        cancelarEdicaoP();
+        buscarProdutosDoBanco(function() {
+          renderCadastroProdutos();
+          renderEstoque();
+          renderSelectAvaria();
+        });
+      } else {
+        alert('Erro ao alterar produto.');
+      }
+    })
+    .catch(function() { alert('Erro de conexão.'); });
     return;
   }
   var novoProduto = {
@@ -1849,7 +1855,7 @@ function renderCadastroProdutos() {
     return;
   }
   el.innerHTML = lista.map(function(p) {
-    var lojas = p.lojas && p.lojas.length ? p.lojas.join(', ') : '<span style="color:var(--amber)">Nenhuma loja vinculada</span>';
+    var lojas = p.lojas && p.lojas.length ? p.lojas.join(', ') : '<span style="color:var(--text3)">Todas as lojas</span>';
     return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
         '<div style="flex:1">' +
