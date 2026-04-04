@@ -230,29 +230,31 @@ function buscarProdutosDoBanco(callback) {
   var pid = ls('promotor-id') || '';
   if (!pid) { if (callback) callback(); return; }
 
-  fetch(SUPABASE_URL + '/rest/v1/produtos?select=id,nome,sku,minimo,preco_sugerido,fornecedor&promotor_id=eq.' + pid + '&order=nome', {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
-  })
-  .then(function(r) { return r.ok ? r.json() : []; })
-  .then(function(prods) {
-    _produtosCache = Array.isArray(prods) ? prods.map(function(p) {
+  Promise.all([
+    fetch(SUPABASE_URL + '/rest/v1/produtos?select=id,nome,sku,minimo,preco_sugerido,fornecedor&promotor_id=eq.' + pid + '&order=nome', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
+    }).then(function(r){ return r.ok ? r.json() : []; }),
+    fetch(SUPABASE_URL + '/rest/v1/concorrentes?select=id,produto_id,empresa,produto_similar&promotor_id=eq.' + pid, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
+    }).then(function(r){ return r.ok ? r.json() : []; }),
+    fetch(SUPABASE_URL + '/rest/v1/lojas?select=id,nome,rede,cidade&promotor_id=eq.' + pid + '&order=criado_em', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
+    }).then(function(r){ return r.ok ? r.json() : []; })
+  ])
+  .then(function(res) {
+    _produtosCache = Array.isArray(res[0]) ? res[0].map(function(p) {
       return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: [] };
     }) : [];
-    return fetch(SUPABASE_URL + '/rest/v1/concorrentes?select=id,produto_id,empresa,produto_similar&promotor_id=eq.' + pid, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
-    });
-  })
-  .then(function(r) { return r.ok ? r.json() : []; })
-  .then(function(concs) {
-    _concorrentesCache = Array.isArray(concs) ? concs.map(function(c) {
+    _concorrentesCache = Array.isArray(res[1]) ? res[1].map(function(c) {
       return { id: c.id, produto_id: c.produto_id, empresa: c.empresa||'', similar: c.produto_similar||'' };
     }) : [];
+    _lojasCache = Array.isArray(res[2]) ? res[2] : [];
     produtos = getProdutos();
-    if (callback) callback();
+    if (typeof callback === 'function') callback();
   })
   .catch(function(e) {
     console.error('[SmartPDV] buscarProdutosDoBanco erro:', e);
-    if (callback) callback();
+    if (typeof callback === 'function') callback();
   });
 }
 
@@ -433,53 +435,75 @@ tick(); setInterval(tick,30000);
 
 
 // ─── LOJAS MÚLTIPLAS ──────────────────────────────────────────────────────────
-function lojasKey() {
-  var cpf = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
-  return 'p:' + cpf + ':minhas-lojas';
-}
-function carregarLojas() {
-  var chaveNova = lojasKey();
-  var d = localStorage.getItem(chaveNova);
-  if (d) { try { return JSON.parse(d); } catch(e){ return []; } }
-  var antigo = localStorage.getItem('minhas-lojas');
-  if (antigo) {
-    localStorage.setItem(chaveNova, antigo);
-    localStorage.removeItem('minhas-lojas');
-    try { return JSON.parse(antigo); } catch(e){ return []; }
-  }
-  return [];
+// ─── LOJAS — SEMPRE DO BANCO ─────────────────────────────────────────────────
+var _lojasCache = [];
+
+function carregarLojas() { return _lojasCache; }
+
+function buscarLojasDoBanco(callback) {
+  var pid = ls('promotor-id') || '';
+  if (!pid) { if (callback) callback(); return; }
+  fetch(SUPABASE_URL + '/rest/v1/lojas?select=id,nome,rede,cidade&promotor_id=eq.' + pid + '&order=criado_em', {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
+  })
+  .then(function(r) { return r.ok ? r.json() : []; })
+  .then(function(lojas) {
+    _lojasCache = Array.isArray(lojas) ? lojas : [];
+    if (callback) callback();
+  })
+  .catch(function(e) {
+    console.error('[SmartPDV] buscarLojasDoBanco erro:', e);
+    if (callback) callback();
+  });
 }
 
 function addLoja() {
   var nome   = document.getElementById('nova-loja-nome').value.trim();
-  var rede   = document.getElementById('nova-loja-rede').value;
+  var rede   = document.getElementById('nova-loja-rede').value.trim();
   var cidade = document.getElementById('nova-loja-cidade').value.trim();
   if (!nome) { alert('Informe o nome da loja.'); return; }
-  var lista = carregarLojas();
-  if (lista.length >= 5) { alert('Limite de 5 lojas atingido. Remova uma antes de adicionar.'); return; }
-  if (lista.find(function(l){ return l.nome === nome; })) { alert('Loja já cadastrada.'); return; }
-  lista.push({ id: 'l'+Date.now(), nome: nome, rede: rede, cidade: cidade });
-  localStorage.setItem(lojasKey(), JSON.stringify(lista));
-  document.getElementById('nova-loja-nome').value = '';
-  document.getElementById('nova-loja-rede').value = '';
-  document.getElementById('nova-loja-cidade').value = '';
-  // Se for a primeira loja, definir como ativa
-  if (lista.length === 1) {
-    lss('promotor-loja', nome);
-    lss('promotor-rede', rede);
-    lss('promotor-cidade', cidade);
-    syncLoja();
-  }
-  renderLojas();
-  alert('✓ Loja adicionada!');
+  if (_lojasCache.length >= 5) { alert('Limite de 5 lojas atingido.'); return; }
+  if (_lojasCache.find(function(l){ return l.nome === nome; })) { alert('Loja já cadastrada.'); return; }
+  var pid = ls('promotor-id') || '';
+  fetch(SUPABASE_URL + '/rest/v1/lojas', {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify({ promotor_id: pid, nome: nome, rede: rede, cidade: cidade })
+  })
+  .then(function(r) { return r.ok ? r.json() : null; })
+  .then(function(salvo) {
+    if (!salvo) { alert('Erro ao salvar loja.'); return; }
+    document.getElementById('nova-loja-nome').value = '';
+    document.getElementById('nova-loja-rede').value = '';
+    document.getElementById('nova-loja-cidade').value = '';
+    buscarLojasDoBanco(function() {
+      // Se for a primeira loja, ativar automaticamente
+      if (_lojasCache.length === 1) {
+        lss('promotor-loja', nome);
+        lss('promotor-rede', rede);
+        lss('promotor-cidade', cidade);
+        syncLoja();
+      }
+      renderLojas();
+      alert('✓ Loja adicionada!');
+    });
+  })
+  .catch(function() { alert('Erro de conexão ao salvar loja.'); });
 }
 
 function removerLoja(id) {
-  var lista = carregarLojas().filter(function(l){ return l.id !== id; });
-  localStorage.setItem(lojasKey(), JSON.stringify(lista));
-  // Se era a loja ativa, limpar
-  renderLojas();
-  syncLoja();
+  if (!confirm('Remover esta loja?')) return;
+  fetch(SUPABASE_URL + '/rest/v1/lojas?id=eq.' + id, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  })
+  .then(function() {
+    buscarLojasDoBanco(function() {
+      renderLojas();
+      syncLoja();
+    });
+  })
+  .catch(function() { alert('Erro ao remover loja.'); });
 }
 
 function renderLojas() {
@@ -508,8 +532,7 @@ function renderLojas() {
 }
 
 function selecionarLoja(id) {
-  var lista = carregarLojas();
-  var loja = lista.find(function(l){ return l.id === id; });
+  var loja = _lojasCache.find(function(l){ return l.id === id; });
   if (!loja) return;
   // Salvar estado da loja atual antes de trocar
   salvarEstadoLoja();
@@ -596,6 +619,7 @@ function navTo(name) {
   // Ao entrar em Config, sempre recarregar do banco
   if (name === 'config') {
     buscarProdutosDoBanco(function() {
+      renderLojas();
       renderCadastroProdutos();
       renderCadastroConcorrentes();
       renderNpLojasCheck();
