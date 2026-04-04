@@ -1745,14 +1745,25 @@ function addProduto() {
   var lista = carregarProdutos();
   if (lista.find(function(p){ return p.sku===sku; })) { alert('SKU já cadastrado.'); return; }
   var fornecedor = document.getElementById('np-fornecedor') ? document.getElementById('np-fornecedor').value.trim() : '';
-  // Modo edição — atualiza produto no banco
+  // Modo edição — atualiza produto no banco SEM verificar duplicata
   if (editandoId) {
     var elF2 = document.getElementById('np-fornecedor');
     var forn2 = elF2 ? elF2.value.trim() : '';
+    // Coletar lojas selecionadas na edição
+    var lojasDivs2 = document.querySelectorAll('#np-lojas-check div[data-sel="1"]');
+    var lojasSel2 = [];
+    lojasDivs2.forEach(function(d){ if(d.dataset.loja) lojasSel2.push(d.dataset.loja); });
     fetch(SUPABASE_URL + '/rest/v1/produtos?id=eq.' + editandoId, {
       method: 'PATCH',
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: nome, sku: sku, minimo: min, preco_sugerido: isNaN(preco)?0:preco, fornecedor: forn2 })
+      body: JSON.stringify({
+        nome: nome,
+        sku: sku,
+        minimo: min,
+        preco_sugerido: isNaN(preco) ? 0 : preco,
+        fornecedor: forn2,
+        lojas: lojasSel2
+      })
     })
     .then(function(r) {
       if (r.ok) {
@@ -1764,7 +1775,7 @@ function addProduto() {
           renderSelectAvaria();
         });
       } else {
-        alert('Erro ao alterar produto.');
+        r.text().then(function(t){ alert('Erro ao alterar: ' + t.slice(0,100)); });
       }
     })
     .catch(function() { alert('Erro de conexão.'); });
