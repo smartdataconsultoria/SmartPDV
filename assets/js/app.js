@@ -116,7 +116,7 @@ function carregarDadosDoBanco(promotorId, callback) {
   var chProd = 'p:' + cpf + ':cadastro-produtos';
   var chConc = 'p:' + cpf + ':cadastro-concorrentes';
 
-  var url = SUPABASE_URL + '/rest/v1/produtos?select=id,nome,sku,minimo,preco_sugerido,fornecedor&promotor_id=eq.' + pid + '&order=nome';
+  var url = SUPABASE_URL + '/rest/v1/produtos?select=id,nome,sku,minimo,preco_sugerido,fornecedor,lojas&promotor_id=eq.' + pid + '&order=nome';
 
   fetch(url, {
     headers: {
@@ -131,7 +131,7 @@ function carregarDadosDoBanco(promotorId, callback) {
   })
   .then(function(prods) {
     var lista = Array.isArray(prods) ? prods.map(function(p) {
-      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: [] };
+      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: Array.isArray(p.lojas) ? p.lojas : [] };
     }) : [];
     localStorage.setItem(chProd, JSON.stringify(lista));
 
@@ -232,7 +232,7 @@ function buscarProdutosDoBanco(callback) {
   if (!pid) { if (callback) callback(); return; }
 
   Promise.all([
-    fetch(SUPABASE_URL + '/rest/v1/produtos?select=id,nome,sku,minimo,preco_sugerido,fornecedor&promotor_id=eq.' + pid + '&order=nome', {
+    fetch(SUPABASE_URL + '/rest/v1/produtos?select=id,nome,sku,minimo,preco_sugerido,fornecedor,lojas&promotor_id=eq.' + pid + '&order=nome', {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
     }).then(function(r){ return r.ok ? r.json() : []; }),
     fetch(SUPABASE_URL + '/rest/v1/concorrentes?select=id,produto_id,empresa,produto_similar&promotor_id=eq.' + pid, {
@@ -244,7 +244,7 @@ function buscarProdutosDoBanco(callback) {
   ])
   .then(function(res) {
     _produtosCache = Array.isArray(res[0]) ? res[0].map(function(p) {
-      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: [] };
+      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: Array.isArray(p.lojas) ? p.lojas : [] };
     }) : [];
     _concorrentesCache = Array.isArray(res[1]) ? res[1].map(function(c) {
       return { id: c.id, produto_id: c.produto_id, empresa: c.empresa||'', similar: c.produto_similar||'' };
