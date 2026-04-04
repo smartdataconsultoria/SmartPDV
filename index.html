@@ -243,6 +243,24 @@
     </div>
   </div>
 
+  <!-- Banner de dados não salvos -->
+  <div id="banner-nao-salvo" style="display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--amber-bg);border:1.5px solid var(--amber);border-radius:var(--radius-sm);margin:12px 14px 0;padding:10px 14px;animation:pulse-border 2s infinite">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:18px">⚠️</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--amber)">Dados não salvos no banco!</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:1px">Clique em "Salvar estoque" antes de fechar o app.</div>
+      </div>
+    </div>
+    <button onclick="salvarEstoque()" style="background:var(--amber);color:#000;border:none;border-radius:var(--radius-sm);padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Syne',sans-serif">💾 Salvar agora</button>
+  </div>
+  <style>
+    @keyframes pulse-border {
+      0%,100% { box-shadow: 0 0 0 0 rgba(252,163,17,0); }
+      50%      { box-shadow: 0 0 0 4px rgba(252,163,17,0.2); }
+    }
+  </style>
+
   <div class="ibox ibox-blue" style="margin-top:12px">
     💡 Lance o estoque no <strong>sistema</strong> (se tiver acesso) e na <strong>ponta de gôndola</strong>. O preço de cada produto pode ser preenchido aqui mesmo.
   </div>
