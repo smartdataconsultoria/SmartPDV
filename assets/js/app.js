@@ -1807,59 +1807,107 @@ function addProduto() {
     renderCadastroProdutos(); recarregarProdutos();
     return;
   }
-  var novoProduto = {
-    id: gerarUUID(),
-    nome: nome, sku: sku, minimo: min,
-    preco_sugerido: isNaN(preco)?0:preco,
-    fornecedor: fornecedor,
-    lojas: lojasSel
-  };
-  lista.push(novoProduto);
-  localStorage.setItem(prodKey(), JSON.stringify(lista));
-  document.getElementById('np-nome').value='';
-  document.getElementById('np-sku').value='';
-  document.getElementById('np-minimo').value='';
-  document.getElementById('np-preco').value='';
-  var elForn = document.getElementById('np-fornecedor');
-  if (elForn) elForn.value='';
-  renderCadastroProdutos();
-  recarregarProdutos();
-  // Salvar no Supabase com as credenciais fixas
-  fetch(SUPABASE_URL + '/rest/v1/produtos', {
-    method: 'POST',
+  var promotorId = ls('promotor-id') || '';
+
+  // 1. Verificar no banco se SKU já existe para este promotor
+  fetch(SUPABASE_URL + '/rest/v1/produtos?select=id,nome,sku&sku=eq.' + encodeURIComponent(sku) + '&promotor_id=eq.' + encodeURIComponent(promotorId), {
     headers: {
       'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates,return=representation'
-    },
-    body: JSON.stringify({
-      id: novoProduto.id,
-      nome: novoProduto.nome,
-      sku: novoProduto.sku,
-      minimo: novoProduto.minimo,
-      preco_sugerido: novoProduto.preco_sugerido,
-      fornecedor: novoProduto.fornecedor,
-      promotor_id: ls('promotor-id') || ''
-    })
-  }).then(function(r) {
-    if (r.ok) {
-      return r.json().then(function(salvo) {
-        // Atualizar id local com o id retornado pelo banco
-        if (salvo && salvo[0] && salvo[0].id) {
-          var listaAtual = carregarProdutos();
-          var idx = listaAtual.findIndex(function(x){ return x.sku === novoProduto.sku; });
-          if (idx >= 0) { listaAtual[idx].id = salvo[0].id; }
-          localStorage.setItem(prodKey(), JSON.stringify(listaAtual));
-        }
-        alert('✓ Produto salvo no banco!');
-        renderCadastroProdutos(); recarregarProdutos();
-      });
-    } else {
-      return r.text().then(function(t){ alert('✓ Cadastrado localmente. Erro banco: ' + t.slice(0,100)); });
+      'Authorization': 'Bearer ' + SUPABASE_KEY
     }
-  }).catch(function(e) {
-    alert('✓ Cadastrado! (sem conexão com banco)');
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(existentes) {
+    if (Array.isArray(existentes) && existentes.length > 0) {
+      // Produto já cadastrado no banco — avisar e não salvar
+      alert('⚠️ Produto já cadastrado!
+
+O produto "' + existentes[0].nome + '" com SKU ' + sku + ' já existe no banco.
+
+Se quiser alterar, use o botão Editar.');
+      return;
+    }
+
+    // 2. Produto novo — salvar localmente e no banco
+    var novoProduto = {
+      id: gerarUUID(),
+      nome: nome, sku: sku, minimo: min,
+      preco_sugerido: isNaN(preco) ? 0 : preco,
+      fornecedor: fornecedor,
+      lojas: lojasSel
+    };
+    lista.push(novoProduto);
+    localStorage.setItem(prodKey(), JSON.stringify(lista));
+
+    // Limpar campos
+    document.getElementById('np-nome').value = '';
+    document.getElementById('np-sku').value = '';
+    document.getElementById('np-minimo').value = '';
+    document.getElementById('np-preco').value = '';
+    var elForn = document.getElementById('np-fornecedor');
+    if (elForn) elForn.value = '';
+    renderCadastroProdutos();
+    recarregarProdutos();
+
+    // 3. Salvar no banco
+    fetch(SUPABASE_URL + '/rest/v1/produtos', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        id: novoProduto.id,
+        nome: novoProduto.nome,
+        sku: novoProduto.sku,
+        minimo: novoProduto.minimo,
+        preco_sugerido: novoProduto.preco_sugerido,
+        fornecedor: novoProduto.fornecedor,
+        promotor_id: promotorId
+      })
+    })
+    .then(function(r) {
+      if (r.ok) {
+        return r.json().then(function(salvo) {
+          if (salvo && salvo[0] && salvo[0].id) {
+            var listaAtual = carregarProdutos();
+            var idx = listaAtual.findIndex(function(x){ return x.sku === novoProduto.sku; });
+            if (idx >= 0) { listaAtual[idx].id = salvo[0].id; }
+            localStorage.setItem(prodKey(), JSON.stringify(listaAtual));
+          }
+          alert('✓ Produto "' + novoProduto.nome + '" cadastrado com sucesso!');
+          renderCadastroProdutos(); recarregarProdutos();
+        });
+      } else {
+        return r.text().then(function(t){
+          alert('Produto salvo localmente, mas houve erro no banco:
+' + t.slice(0, 120));
+        });
+      }
+    })
+    .catch(function() {
+      alert('✓ Produto salvo! (sem conexão com banco — será sincronizado depois)');
+    });
+  })
+  .catch(function() {
+    // Se falhar a verificação, salva localmente sem checar duplicata
+    var novoProduto = {
+      id: gerarUUID(),
+      nome: nome, sku: sku, minimo: min,
+      preco_sugerido: isNaN(preco) ? 0 : preco,
+      fornecedor: fornecedor,
+      lojas: lojasSel
+    };
+    lista.push(novoProduto);
+    localStorage.setItem(prodKey(), JSON.stringify(lista));
+    document.getElementById('np-nome').value = '';
+    document.getElementById('np-sku').value = '';
+    document.getElementById('np-minimo').value = '';
+    document.getElementById('np-preco').value = '';
+    renderCadastroProdutos(); recarregarProdutos();
+    alert('✓ Produto salvo localmente. Verifique a conexão com o banco.');
   });
 }
 
@@ -2039,11 +2087,21 @@ function sincronizarProdutos() {
   var sbUrl = SUPABASE_URL;
   var sbKey = SUPABASE_KEY;
   var token = ls('auth-token') || sbKey;
+  var promotorId = ls('promotor-id') || '';
   var lista = carregarProdutos();
   if (!lista.length) { alert('Nenhum produto cadastrado.'); return; }
 
+  // UPSERT — atualiza se já existe, insere se não existe
   var payload = lista.map(function(p) {
-    return { id: p.id, nome: p.nome, sku: p.sku, minimo: p.minimo, preco_sugerido: p.preco_sugerido };
+    return {
+      id: p.id,
+      nome: p.nome,
+      sku: p.sku,
+      minimo: p.minimo,
+      preco_sugerido: p.preco_sugerido,
+      fornecedor: p.fornecedor || '',
+      promotor_id: promotorId
+    };
   });
 
   fetch(sbUrl + '/rest/v1/produtos', {
@@ -2052,16 +2110,21 @@ function sincronizarProdutos() {
       'apikey': sbKey,
       'Authorization': 'Bearer ' + token,
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
     },
     body: JSON.stringify(payload)
   }).then(function(r) {
     if (r.ok) {
-      // Sincronizar também os concorrentes
       var concs = carregarConcorrentes();
       if (concs.length) {
         var concPayload = concs.map(function(c) {
-          return { id: c.id, produto_id: c.produto_id, empresa: c.empresa, produto_similar: c.produto_similar || c.similar || '' };
+          return {
+            id: c.id,
+            produto_id: c.produto_id,
+            empresa: c.empresa,
+            produto_similar: c.produto_similar || c.similar || '',
+            promotor_id: promotorId
+          };
         });
         return fetch(sbUrl + '/rest/v1/concorrentes', {
           method: 'POST',
@@ -2069,12 +2132,12 @@ function sincronizarProdutos() {
             'apikey': sbKey,
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
+            'Prefer': 'resolution=merge-duplicates,return=minimal'
           },
           body: JSON.stringify(concPayload)
         }).then(function(r2) {
           alert(r2.ok
-            ? '✓ Sincronizado! ' + lista.length + ' produto(s) e ' + concs.length + ' similar(es) enviados ao banco.'
+            ? '✓ Sincronizado! ' + lista.length + ' produto(s) e ' + concs.length + ' similar(es) salvos no banco.'
             : '✓ Produtos salvos. Erro ao salvar similares.');
         });
       }
