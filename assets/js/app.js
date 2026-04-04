@@ -112,23 +112,30 @@ function mostrarLogin() {
 // ─── CARREGAR DADOS DO BANCO NO LOGIN ────────────────────────────────────────
 function carregarDadosDoBanco(promotorId, callback) {
   var pid = promotorId || ls('promotor-id') || '';
-  fetch(SUPABASE_URL + '/rest/v1/produtos?select=*&promotor_id=eq.' + encodeURIComponent(pid) + '&order=nome', {
+  var cpf = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
+  // Chaves com CPF explícito para garantir isolamento correto
+  var chProd = 'p:' + cpf + ':cadastro-produtos';
+  var chConc = 'p:' + cpf + ':cadastro-concorrentes';
+
+  fetch(SUPABASE_URL + '/rest/v1/produtos?select=*&promotor_id=eq.' + pid + '&order=nome', {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
   })
   .then(function(r) { return r.json(); })
   .then(function(prods) {
-    localStorage.setItem(prodKey(), JSON.stringify(Array.isArray(prods) ? prods.map(function(p) {
+    var lista = Array.isArray(prods) ? prods.map(function(p) {
       return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: p.lojas||[] };
-    }) : []));
-    return fetch(SUPABASE_URL + '/rest/v1/concorrentes?select=*&promotor_id=eq.' + encodeURIComponent(pid), {
+    }) : [];
+    localStorage.setItem(chProd, JSON.stringify(lista));
+    return fetch(SUPABASE_URL + '/rest/v1/concorrentes?select=*&promotor_id=eq.' + pid, {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
     });
   })
   .then(function(r) { return r.json(); })
   .then(function(concs) {
-    localStorage.setItem(concKey(), JSON.stringify(Array.isArray(concs) ? concs.map(function(c) {
+    var lista = Array.isArray(concs) ? concs.map(function(c) {
       return { id: c.id, produto_id: c.produto_id, empresa: c.empresa||'', similar: c.produto_similar||c.similar||'' };
-    }) : []));
+    }) : [];
+    localStorage.setItem(chConc, JSON.stringify(lista));
     if (typeof callback === 'function') callback();
   })
   .catch(function(e) {
