@@ -86,46 +86,44 @@ function mostrarErroLogin(msg) {
 function carregarDadosDoBanco(promotorId, callback) {
   var sbUrl = SUPABASE_URL;
   var sbKey = SUPABASE_KEY;
+  var pid   = promotorId || ls('promotor-id') || '';
 
-  // Buscar produtos do banco
-  fetch(sbUrl + '/rest/v1/produtos?select=*&order=nome', {
+  // Buscar apenas os produtos deste promotor
+  fetch(sbUrl + '/rest/v1/produtos?select=*&promotor_id=eq.' + encodeURIComponent(pid) + '&order=nome', {
     headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
   })
   .then(function(r) { return r.json(); })
   .then(function(produtosBanco) {
-    if (Array.isArray(produtosBanco) && produtosBanco.length > 0) {
-      // Converter formato do banco para formato do app
-      var produtosApp = produtosBanco.map(function(p) {
-        return {
-          id:            p.id,
-          nome:          p.nome || '',
-          sku:           p.sku  || '',
-          minimo:        p.minimo || p.estoque_minimo || 0,
-          preco_sugerido: p.preco_sugerido || 0,
-          fornecedor:    p.fornecedor || '',
-          lojas:         p.lojas || []
-        };
-      });
-      localStorage.setItem(prodKey(), JSON.stringify(produtosApp));
-    }
-    // Buscar concorrentes do banco
-    return fetch(sbUrl + '/rest/v1/concorrentes?select=*', {
+    // Sempre substitui o cache local pelo que veio do banco
+    var produtosApp = Array.isArray(produtosBanco) ? produtosBanco.map(function(p) {
+      return {
+        id:             p.id,
+        nome:           p.nome || '',
+        sku:            p.sku  || '',
+        minimo:         p.minimo || p.estoque_minimo || 0,
+        preco_sugerido: p.preco_sugerido || 0,
+        fornecedor:     p.fornecedor || '',
+        lojas:          p.lojas || []
+      };
+    }) : [];
+    localStorage.setItem(prodKey(), JSON.stringify(produtosApp));
+
+    // Buscar apenas os concorrentes deste promotor
+    return fetch(sbUrl + '/rest/v1/concorrentes?select=*&promotor_id=eq.' + encodeURIComponent(pid), {
       headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
     });
   })
   .then(function(r) { return r.json(); })
   .then(function(concsBanco) {
-    if (Array.isArray(concsBanco) && concsBanco.length > 0) {
-      var concsApp = concsBanco.map(function(c) {
-        return {
-          id:         c.id,
-          produto_id: c.produto_id,
-          empresa:    c.empresa || '',
-          similar:    c.produto_similar || c.similar || ''
-        };
-      });
-      localStorage.setItem(concKey(), JSON.stringify(concsApp));
-    }
+    var concsApp = Array.isArray(concsBanco) ? concsBanco.map(function(c) {
+      return {
+        id:         c.id,
+        produto_id: c.produto_id,
+        empresa:    c.empresa || '',
+        similar:    c.produto_similar || c.similar || ''
+      };
+    }) : [];
+    localStorage.setItem(concKey(), JSON.stringify(concsApp));
     if (typeof callback === 'function') callback();
   })
   .catch(function(e) {
@@ -1798,7 +1796,8 @@ function addProduto() {
       sku: novoProduto.sku,
       minimo: novoProduto.minimo,
       preco_sugerido: novoProduto.preco_sugerido,
-      fornecedor: novoProduto.fornecedor
+      fornecedor: novoProduto.fornecedor,
+      promotor_id: ls('promotor-id') || ''
     })
   }).then(function(r) {
     if (r.ok) {
@@ -1934,7 +1933,7 @@ function addConcorrente() {
   if (!similar) { alert('Informe o produto similar.'); return; }
   var lista = carregarConcorrentes();
   lista = lista.filter(function(c){ return c.produto_id!==pid; });
-  var novoConc = { id: 'c'+Date.now(), produto_id: pid, empresa: empresa, produto_similar: similar };
+  var novoConc = { id: 'c'+Date.now(), produto_id: pid, empresa: empresa, produto_similar: similar, promotor_id: ls('promotor-id') || '' };
   lista.push(novoConc);
   localStorage.setItem(concKey(), JSON.stringify(lista));
   document.getElementById('nc-meu-produto').value='';
@@ -1947,7 +1946,8 @@ function addConcorrente() {
     id: novoConc.id,
     produto_id: novoConc.produto_id,
     empresa: novoConc.empresa,
-    produto_similar: novoConc.produto_similar
+    produto_similar: novoConc.produto_similar,
+    promotor_id: ls('promotor-id') || ''
   }).then(function(r) {
     alert(r && r.ok ? '✓ Similar cadastrado e salvo no banco!' : '✓ Similar cadastrado localmente!');
   }).catch(function() {
