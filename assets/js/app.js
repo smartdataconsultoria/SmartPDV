@@ -29,7 +29,7 @@ function fazerLogin() {
   if (btnEl)  btnEl.disabled = true;
   if (loadEl) { loadEl.style.display='block'; loadEl.textContent='⏳ Verificando...'; }
 
-  fetch(SUPABASE_URL + '/rest/v1/promotores?select=id,nome,cpf,loja,ativo&cpf=eq.' + cpfLimpo + '&senha=eq.' + encodeURIComponent(senha) + '&ativo=eq.true', {
+  fetch(SUPABASE_URL + '/rest/v1/promotores?select=id,nome,cpf,loja,ativo&cpf=eq.' + cpfLimpo + '&senha=eq.' + encodeURIComponent(senha), {
     headers: {
       'apikey': SUPABASE_KEY,
       'Authorization': 'Bearer ' + SUPABASE_KEY
@@ -52,7 +52,6 @@ function fazerLogin() {
       lss('promotor-nome', p.nome || cpfLimpo);
       lss('promotor-id', String(p.id || ''));
       if (p.loja) lss('promotor-loja', p.loja);
-      // Carregar produtos e concorrentes do banco para este promotor
       if (loadEl) { loadEl.style.display='block'; loadEl.textContent='⏳ Carregando seus dados...'; }
       carregarDadosDoBanco(p.id, function() {
         if (loadEl) loadEl.style.display='none';
@@ -82,95 +81,12 @@ function mostrarErroLogin(msg) {
   if (el) { el.textContent = msg; el.style.display = 'block'; }
 }
 
-// ─── CARREGAR DADOS DO BANCO NO LOGIN ────────────────────────────────────────
-function carregarDadosDoBanco(promotorId, callback) {
-  var sbUrl = SUPABASE_URL;
-  var sbKey = SUPABASE_KEY;
-  var pid   = promotorId || ls('promotor-id') || '';
-
-  // Buscar apenas os produtos deste promotor
-  fetch(sbUrl + '/rest/v1/produtos?select=*&promotor_id=eq.' + encodeURIComponent(pid) + '&order=nome', {
-    headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(produtosBanco) {
-    // Sempre substitui o cache local pelo que veio do banco
-    var produtosApp = Array.isArray(produtosBanco) ? produtosBanco.map(function(p) {
-      return {
-        id:             p.id,
-        nome:           p.nome || '',
-        sku:            p.sku  || '',
-        minimo:         p.minimo || p.estoque_minimo || 0,
-        preco_sugerido: p.preco_sugerido || 0,
-        fornecedor:     p.fornecedor || '',
-        lojas:          p.lojas || []
-      };
-    }) : [];
-    localStorage.setItem(prodKey(), JSON.stringify(produtosApp));
-
-    // Buscar apenas os concorrentes deste promotor
-    return fetch(sbUrl + '/rest/v1/concorrentes?select=*&promotor_id=eq.' + encodeURIComponent(pid), {
-      headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
-    });
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(concsBanco) {
-    var concsApp = Array.isArray(concsBanco) ? concsBanco.map(function(c) {
-      return {
-        id:         c.id,
-        produto_id: c.produto_id,
-        empresa:    c.empresa || '',
-        similar:    c.produto_similar || c.similar || ''
-      };
-    }) : [];
-    localStorage.setItem(concKey(), JSON.stringify(concsApp));
-    if (typeof callback === 'function') callback();
-  })
-  .catch(function(e) {
-    console.warn('Aviso: erro ao carregar dados do banco, usando dados locais.', e);
-    if (typeof callback === 'function') callback();
-  });
-}
-
-function migrarDadosAntigos() {
-  // Se o promotor tem dados na chave antiga (sem CPF), migra para a nova chave
-  var dadosAntigosProd = localStorage.getItem('cadastro-produtos');
-  var dadosAntigosConc = localStorage.getItem('cadastro-concorrentes');
-
-  if (dadosAntigosProd && !localStorage.getItem(prodKey())) {
-    localStorage.setItem(prodKey(), dadosAntigosProd);
-    localStorage.removeItem('cadastro-produtos');
-  }
-  if (dadosAntigosConc && !localStorage.getItem(concKey())) {
-    localStorage.setItem(concKey(), dadosAntigosConc);
-    localStorage.removeItem('cadastro-concorrentes');
-  }
-
-  // Migrar chaves antigas de loja (sem CPF) para novas (com CPF)
-  var cpf = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
-  var keysParaMigrar = [];
-  for (var i = 0; i < localStorage.length; i++) {
-    var k = localStorage.key(i);
-    if (k && k.startsWith('loja:') && !k.startsWith('p:')) {
-      keysParaMigrar.push(k);
-    }
-  }
-  keysParaMigrar.forEach(function(k) {
-    var novaChave = 'p:' + cpf + ':' + k;
-    if (!localStorage.getItem(novaChave)) {
-      localStorage.setItem(novaChave, localStorage.getItem(k));
-    }
-    localStorage.removeItem(k);
-  });
-}
-
 function entrarNoApp() {
   document.getElementById('sc-login').style.display = 'none';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('sc-home').classList.add('active');
   var nav = document.getElementById('main-nav');
   if (nav) nav.style.display = 'flex';
-  migrarDadosAntigos();
   initApp();
   calcMeta();
 }
@@ -179,16 +95,8 @@ function verificarSessao() {
   // Autenticação via banco — verifica se tem sessão local válida
   var cpf  = ls('auth-cpf');
   var nome = ls('promotor-nome');
-  var pid  = ls('promotor-id');
   if (cpf && nome) {
-    // Sempre recarrega dados do banco ao retomar sessão
-    if (pid) {
-      carregarDadosDoBanco(pid, function() {
-        entrarNoApp();
-      });
-    } else {
-      entrarNoApp();
-    }
+    entrarNoApp();
   } else {
     mostrarLogin();
   }
@@ -200,24 +108,41 @@ function mostrarLogin() {
   var nav2 = document.getElementById('main-nav'); if (nav2) nav2.style.display = 'none';
 }
 
+
+// ─── CARREGAR DADOS DO BANCO NO LOGIN ────────────────────────────────────────
+function carregarDadosDoBanco(promotorId, callback) {
+  var pid = promotorId || ls('promotor-id') || '';
+  fetch(SUPABASE_URL + '/rest/v1/produtos?select=*&promotor_id=eq.' + encodeURIComponent(pid) + '&order=nome', {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(prods) {
+    localStorage.setItem(prodKey(), JSON.stringify(Array.isArray(prods) ? prods.map(function(p) {
+      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: p.lojas||[] };
+    }) : []));
+    return fetch(SUPABASE_URL + '/rest/v1/concorrentes?select=*&promotor_id=eq.' + encodeURIComponent(pid), {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(concs) {
+    localStorage.setItem(concKey(), JSON.stringify(Array.isArray(concs) ? concs.map(function(c) {
+      return { id: c.id, produto_id: c.produto_id, empresa: c.empresa||'', similar: c.produto_similar||c.similar||'' };
+    }) : []));
+    if (typeof callback === 'function') callback();
+  })
+  .catch(function(e) {
+    console.warn('Erro ao carregar banco:', e);
+    if (typeof callback === 'function') callback();
+  });
+}
+
 function fazerLogout() {
-  // Limpar sessão mas preservar dados locais do promotor (estoque, lojas etc.)
-  lss('auth-token','');
-  lss('auth-cpf','');
-  lss('promotor-nome','');
-  lss('promotor-id','');
-  lss('promotor-loja','');
-  lss('promotor-rede','');
-  lss('promotor-cidade','');
-  // Limpar estado em memória
+  lss('auth-token',''); lss('auth-cpf','');
+  lss('promotor-nome',''); lss('promotor-id','');
+  lss('promotor-loja',''); lss('promotor-rede',''); lss('promotor-cidade','');
   estSistema={}; estGondola={}; precoProp={}; precoConc={};
-  avarias=[]; oportunidades=[]; expoChecks=0;
-  produtos=[];
-  // Limpar loja ativa para não vazar entre promotores
-  lss('promotor-loja','');
-  lss('promotor-rede','');
-  lss('promotor-cidade','');
-  marcarEstoqueSalvo();
+  avarias=[]; oportunidades=[]; expoChecks=0; produtos=[];
   mostrarLogin();
   var em = document.getElementById('login-email');
   var se = document.getElementById('login-senha');
@@ -247,7 +172,7 @@ window.onload = function() {
 };
 
 // ─── DADOS DE PRODUTOS ───────────────────────────────────────────────────────
-// Chave de produtos isolada por promotor (CPF)
+// Produtos carregados do localStorage (cadastrados em Config)
 // ─── GERADOR DE UUID ──────────────────────────────────────────────────────────
 function gerarUUID() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -260,21 +185,13 @@ function gerarUUID() {
   });
 }
 
-function prodKey() {
-  var cpf = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
-  return 'p:' + cpf + ':cadastro-produtos';
-}
-function concKey() {
-  var cpf = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
-  return 'p:' + cpf + ':cadastro-concorrentes';
-}
 function carregarProdutos() {
-  var raw = localStorage.getItem(prodKey());
+  var raw = localStorage.getItem('cadastro-produtos');
   if (raw) { try { return JSON.parse(raw); } catch(e){} }
   return [];
 }
 function carregarConcorrentes() {
-  var raw = localStorage.getItem(concKey());
+  var raw = localStorage.getItem('cadastro-concorrentes');
   if (raw) { try { return JSON.parse(raw); } catch(e){} }
   return [];
 }
@@ -301,9 +218,8 @@ var produtos = [];
 
 // ─── CHAVE POR LOJA ───────────────────────────────────────────────────────────
 function lojaKey(suffix) {
-  var cpf  = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
   var loja = ls('promotor-loja') || 'default';
-  return 'p:' + cpf + ':loja:' + loja + ':' + suffix;
+  return 'loja:' + loja + ':' + suffix;
 }
 function lsLoja(suffix) {
   return localStorage.getItem(lojaKey(suffix));
@@ -478,18 +394,14 @@ function lojasKey() {
   return 'p:' + cpf + ':minhas-lojas';
 }
 function carregarLojas() {
-  // Tenta chave nova (isolada por promotor), senão tenta a antiga e migra
   var chaveNova = lojasKey();
-  var dadosNovos = localStorage.getItem(chaveNova);
-  if (dadosNovos) {
-    try { return JSON.parse(dadosNovos); } catch(e){ return []; }
-  }
-  // Migrar dados antigos se existirem
-  var dadosAntigos = localStorage.getItem('minhas-lojas');
-  if (dadosAntigos) {
-    localStorage.setItem(chaveNova, dadosAntigos);
+  var d = localStorage.getItem(chaveNova);
+  if (d) { try { return JSON.parse(d); } catch(e){ return []; } }
+  var antigo = localStorage.getItem('minhas-lojas');
+  if (antigo) {
+    localStorage.setItem(chaveNova, antigo);
     localStorage.removeItem('minhas-lojas');
-    try { return JSON.parse(dadosAntigos); } catch(e){ return []; }
+    try { return JSON.parse(antigo); } catch(e){ return []; }
   }
   return [];
 }
@@ -731,61 +643,25 @@ function renderEstoque() {
   el.innerHTML = html;
 }
 
-// ─── CONTROLE DE DADOS NÃO SALVOS ────────────────────────────────────────────
 var estoqueAlterado = false;
-
 function marcarEstoqueAlterado() {
-  if (!estoqueAlterado) {
-    estoqueAlterado = true;
-    var banner = document.getElementById('banner-nao-salvo');
-    if (banner) banner.style.display = 'flex';
-  }
+  if (!estoqueAlterado) { estoqueAlterado = true; var b=document.getElementById('banner-nao-salvo'); if(b)b.style.display='flex'; }
 }
-
 function marcarEstoqueSalvo() {
-  estoqueAlterado = false;
-  var banner = document.getElementById('banner-nao-salvo');
-  if (banner) banner.style.display = 'none';
+  estoqueAlterado = false; var b=document.getElementById('banner-nao-salvo'); if(b)b.style.display='none';
 }
-
-// Aviso ao tentar fechar/sair do app com dados não salvos
 window.addEventListener('beforeunload', function(e) {
-  if (estoqueAlterado) {
-    var msg = 'Você tem dados de estoque não salvos! Clique em "Salvar estoque" antes de sair.';
-    e.preventDefault();
-    e.returnValue = msg;
-    return msg;
-  }
+  if (estoqueAlterado) { e.preventDefault(); e.returnValue='Dados de estoque nao salvos!'; return e.returnValue; }
 });
-
-// Aviso ao trocar de aba/minimizar com dados não salvos
-document.addEventListener('visibilitychange', function() {
-  if (document.hidden && estoqueAlterado) {
-    var banner = document.getElementById('banner-nao-salvo');
-    if (banner) {
-      banner.style.background = 'var(--red-bg)';
-      banner.style.borderColor = 'var(--red)';
-      setTimeout(function() {
-        if (banner) {
-          banner.style.background = '';
-          banner.style.borderColor = '';
-        }
-      }, 3000);
-    }
-  }
-});
-
 function onSis(pid) {
   var v = parseInt(document.getElementById('sis-'+pid).value);
   estSistema[pid] = isNaN(v)?undefined:v;
-  calcDif(pid);
-  marcarEstoqueAlterado();
+  calcDif(pid); marcarEstoqueAlterado();
 }
 function onGon(pid) {
   var v = parseInt(document.getElementById('gon-'+pid).value);
   estGondola[pid] = isNaN(v)?undefined:v;
-  calcDif(pid);
-  marcarEstoqueAlterado();
+  calcDif(pid); marcarEstoqueAlterado();
 }
 function calcDif(pid) {
   var el = document.getElementById('dif-'+pid);
@@ -1415,7 +1291,7 @@ function salvarEstoque() {
         };
       });
       localStorage.setItem(histKey, JSON.stringify(historico));
-      marcarEstoqueSalvo(); alert('✓ Estoque salvo no banco de dados!');
+      marcarEstoqueSalvo(); alert('✓ Estoque salvo no banco!');
       atualizarHome();
       renderEstoque();
     } else {
@@ -1806,107 +1682,43 @@ function addProduto() {
     renderCadastroProdutos(); recarregarProdutos();
     return;
   }
+  var novoProduto = {
+    id: gerarUUID(),
+    nome: nome, sku: sku, minimo: min,
+    preco_sugerido: isNaN(preco)?0:preco,
+    fornecedor: fornecedor,
+    lojas: lojasSel
+  };
   var promotorId = ls('promotor-id') || '';
-
-  // 1. Verificar no banco se SKU já existe para este promotor
-  fetch(SUPABASE_URL + '/rest/v1/produtos?select=id,nome,sku&sku=eq.' + encodeURIComponent(sku) + '&promotor_id=eq.' + encodeURIComponent(promotorId), {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY
-    }
+  // Verificar duplicata no banco
+  fetch(SUPABASE_URL + '/rest/v1/produtos?select=id,nome&sku=eq.' + encodeURIComponent(sku) + '&promotor_id=eq.' + encodeURIComponent(promotorId), {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
   })
   .then(function(r) { return r.json(); })
-  .then(function(existentes) {
-    if (Array.isArray(existentes) && existentes.length > 0) {
-      // Produto já cadastrado no banco — avisar e não salvar
-      alert('⚠️ Produto já cadastrado!
-
-O produto "' + existentes[0].nome + '" com SKU ' + sku + ' já existe no banco.
-
-Se quiser alterar, use o botão Editar.');
+  .then(function(exist) {
+    if (Array.isArray(exist) && exist.length > 0) {
+      alert('Produto com SKU ' + sku + ' ja cadastrado: ' + exist[0].nome + '. Use Editar para alterar.');
       return;
     }
-
-    // 2. Produto novo — salvar localmente e no banco
-    var novoProduto = {
-      id: gerarUUID(),
-      nome: nome, sku: sku, minimo: min,
-      preco_sugerido: isNaN(preco) ? 0 : preco,
-      fornecedor: fornecedor,
-      lojas: lojasSel
-    };
     lista.push(novoProduto);
     localStorage.setItem(prodKey(), JSON.stringify(lista));
-
-    // Limpar campos
-    document.getElementById('np-nome').value = '';
-    document.getElementById('np-sku').value = '';
-    document.getElementById('np-minimo').value = '';
-    document.getElementById('np-preco').value = '';
-    var elForn = document.getElementById('np-fornecedor');
-    if (elForn) elForn.value = '';
-    renderCadastroProdutos();
-    recarregarProdutos();
-
-    // 3. Salvar no banco
+    ['np-nome','np-sku','np-minimo','np-preco'].forEach(function(id){ var e=document.getElementById(id); if(e)e.value=''; });
+    var elForn=document.getElementById('np-fornecedor'); if(elForn)elForn.value='';
+    renderCadastroProdutos(); recarregarProdutos();
     fetch(SUPABASE_URL + '/rest/v1/produtos', {
       method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify({
-        id: novoProduto.id,
-        nome: novoProduto.nome,
-        sku: novoProduto.sku,
-        minimo: novoProduto.minimo,
-        preco_sugerido: novoProduto.preco_sugerido,
-        fornecedor: novoProduto.fornecedor,
-        promotor_id: promotorId
-      })
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ id: novoProduto.id, nome: novoProduto.nome, sku: novoProduto.sku, minimo: novoProduto.minimo, preco_sugerido: novoProduto.preco_sugerido, fornecedor: novoProduto.fornecedor, promotor_id: promotorId })
     })
-    .then(function(r) {
-      if (r.ok) {
-        return r.json().then(function(salvo) {
-          if (salvo && salvo[0] && salvo[0].id) {
-            var listaAtual = carregarProdutos();
-            var idx = listaAtual.findIndex(function(x){ return x.sku === novoProduto.sku; });
-            if (idx >= 0) { listaAtual[idx].id = salvo[0].id; }
-            localStorage.setItem(prodKey(), JSON.stringify(listaAtual));
-          }
-          alert('✓ Produto "' + novoProduto.nome + '" cadastrado com sucesso!');
-          renderCadastroProdutos(); recarregarProdutos();
-        });
-      } else {
-        return r.text().then(function(t){
-          alert('Produto salvo localmente, mas houve erro no banco:
-' + t.slice(0, 120));
-        });
-      }
-    })
-    .catch(function() {
-      alert('✓ Produto salvo! (sem conexão com banco — será sincronizado depois)');
-    });
+    .then(function(r) { alert(r.ok ? '✓ Produto "' + novoProduto.nome + '" cadastrado!' : '✓ Salvo localmente.'); })
+    .catch(function() { alert('✓ Produto salvo!'); });
   })
   .catch(function() {
-    // Se falhar a verificação, salva localmente sem checar duplicata
-    var novoProduto = {
-      id: gerarUUID(),
-      nome: nome, sku: sku, minimo: min,
-      preco_sugerido: isNaN(preco) ? 0 : preco,
-      fornecedor: fornecedor,
-      lojas: lojasSel
-    };
     lista.push(novoProduto);
     localStorage.setItem(prodKey(), JSON.stringify(lista));
-    document.getElementById('np-nome').value = '';
-    document.getElementById('np-sku').value = '';
-    document.getElementById('np-minimo').value = '';
-    document.getElementById('np-preco').value = '';
+    ['np-nome','np-sku','np-minimo','np-preco'].forEach(function(id){ var e=document.getElementById(id); if(e)e.value=''; });
     renderCadastroProdutos(); recarregarProdutos();
-    alert('✓ Produto salvo localmente. Verifique a conexão com o banco.');
+    alert('✓ Produto salvo localmente!');
   });
 }
 
@@ -1921,8 +1733,8 @@ function removeProduto(id) {
   renderCadastroConcorrentes();
   recarregarProdutos();
   // Remover do Supabase pelo SKU (chave única)
-  var sbUrl = SUPABASE_URL;
-  var sbKey = SUPABASE_KEY;
+  var sbUrl = ls('sb-url');
+  var sbKey = ls('sb-key');
   if (sbUrl && sbKey && produto) {
     fetch(sbUrl + '/rest/v1/produtos?sku=eq.' + encodeURIComponent(produto.sku), {
       method: 'DELETE',
@@ -2050,14 +1862,18 @@ function removeConcorrente(id) {
   localStorage.setItem(concKey(), JSON.stringify(lista));
   renderCadastroConcorrentes();
   recarregarProdutos();
-  fetch(SUPABASE_URL + '/rest/v1/concorrentes?id=eq.' + encodeURIComponent(id), {
-    method: 'DELETE',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/json'
-    }
-  }).catch(function(e){ console.error('Erro ao deletar concorrente:', e); });
+  var sbUrl = ls('sb-url');
+  var sbKey = ls('sb-key');
+  if (sbUrl && sbKey) {
+    fetch(sbUrl + '/rest/v1/concorrentes?id=eq.' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: {
+        'apikey': sbKey,
+        'Authorization': 'Bearer ' + sbKey,
+        'Content-Type': 'application/json'
+      }
+    }).catch(function(e){ console.error('Erro ao deletar concorrente:', e); });
+  }
 }
 
 function renderCadastroConcorrentes() {
@@ -2086,63 +1902,39 @@ function sincronizarProdutos() {
   var sbUrl = SUPABASE_URL;
   var sbKey = SUPABASE_KEY;
   var token = ls('auth-token') || sbKey;
-  var promotorId = ls('promotor-id') || '';
   var lista = carregarProdutos();
   if (!lista.length) { alert('Nenhum produto cadastrado.'); return; }
 
-  // UPSERT — atualiza se já existe, insere se não existe
   var payload = lista.map(function(p) {
-    return {
-      id: p.id,
-      nome: p.nome,
-      sku: p.sku,
-      minimo: p.minimo,
-      preco_sugerido: p.preco_sugerido,
-      fornecedor: p.fornecedor || '',
-      promotor_id: promotorId
-    };
+    return { id: p.id, nome: p.nome, sku: p.sku, minimo: p.minimo, preco_sugerido: p.preco_sugerido };
   });
 
+  var promotorId = ls('promotor-id') || '';
+  var payload = lista.map(function(p) {
+    return { id: p.id, nome: p.nome, sku: p.sku, minimo: p.minimo, preco_sugerido: p.preco_sugerido, fornecedor: p.fornecedor || '', promotor_id: promotorId };
+  });
   fetch(sbUrl + '/rest/v1/produtos', {
     method: 'POST',
-    headers: {
-      'apikey': sbKey,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates,return=minimal'
-    },
+    headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify(payload)
   }).then(function(r) {
     if (r.ok) {
       var concs = carregarConcorrentes();
       if (concs.length) {
         var concPayload = concs.map(function(c) {
-          return {
-            id: c.id,
-            produto_id: c.produto_id,
-            empresa: c.empresa,
-            produto_similar: c.produto_similar || c.similar || '',
-            promotor_id: promotorId
-          };
+          return { id: c.id, produto_id: c.produto_id, empresa: c.empresa, produto_similar: c.produto_similar || c.similar || '', promotor_id: promotorId };
         });
         return fetch(sbUrl + '/rest/v1/concorrentes', {
           method: 'POST',
-          headers: {
-            'apikey': sbKey,
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json',
-            'Prefer': 'resolution=merge-duplicates,return=minimal'
-          },
+          headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
           body: JSON.stringify(concPayload)
         }).then(function(r2) {
-          alert(r2.ok
-            ? '✓ Sincronizado! ' + lista.length + ' produto(s) e ' + concs.length + ' similar(es) salvos no banco.'
-            : '✓ Produtos salvos. Erro ao salvar similares.');
+          alert(r2.ok ? '✓ ' + lista.length + ' produto(s) e ' + concs.length + ' similar(es) sincronizados!' : '✓ Produtos salvos. Erro nos similares.');
         });
       }
-      alert('✓ ' + lista.length + ' produto(s) sincronizado(s) com o banco!');
+      alert('✓ ' + lista.length + ' produto(s) sincronizado(s)!');
     } else {
-      r.text().then(function(t){ alert('Erro ao sincronizar: ' + t.slice(0,150)); });
+      r.text().then(function(t){ alert('Erro: ' + t.slice(0,150)); });
     }
   }).catch(function(e){ alert('Erro de conexão: ' + e); });
 }
