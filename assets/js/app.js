@@ -51,6 +51,7 @@ function fazerLogin() {
       lss('auth-token', SUPABASE_KEY);
       lss('promotor-nome', p.nome || cpfLimpo);
       lss('promotor-id', String(p.id || ''));
+      console.log('[SmartPDV] Login OK — promotor_id:', p.id);
       if (p.loja) lss('promotor-loja', p.loja);
       // Carregar produtos e concorrentes do banco para este promotor
       if (loadEl) { loadEl.style.display='block'; loadEl.textContent='⏳ Carregando seus dados...'; }
@@ -179,8 +180,16 @@ function verificarSessao() {
   // Autenticação via banco — verifica se tem sessão local válida
   var cpf  = ls('auth-cpf');
   var nome = ls('promotor-nome');
+  var pid  = ls('promotor-id');
   if (cpf && nome) {
-    entrarNoApp();
+    // Sempre recarrega dados do banco ao retomar sessão
+    if (pid) {
+      carregarDadosDoBanco(pid, function() {
+        entrarNoApp();
+      });
+    } else {
+      entrarNoApp();
+    }
   } else {
     mostrarLogin();
   }
