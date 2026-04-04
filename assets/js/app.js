@@ -29,7 +29,7 @@ function fazerLogin() {
   if (btnEl)  btnEl.disabled = true;
   if (loadEl) { loadEl.style.display='block'; loadEl.textContent='⏳ Verificando...'; }
 
-  fetch(SUPABASE_URL + '/rest/v1/promotores?select=id,nome,cpf,loja,ativo&cpf=eq.' + cpfLimpo + '&senha=eq.' + encodeURIComponent(senha), {
+  fetch(SUPABASE_URL + '/rest/v1/promotores?select=id,nome,cpf,loja,ativo&cpf=eq.' + cpfLimpo + '&senha=eq.' + encodeURIComponent(senha) + '&ativo=eq.true', {
     headers: {
       'apikey': SUPABASE_KEY,
       'Authorization': 'Bearer ' + SUPABASE_KEY
@@ -51,7 +51,6 @@ function fazerLogin() {
       lss('auth-token', SUPABASE_KEY);
       lss('promotor-nome', p.nome || cpfLimpo);
       lss('promotor-id', String(p.id || ''));
-      console.log('[SmartPDV] Login OK — promotor_id:', p.id);
       if (p.loja) lss('promotor-loja', p.loja);
       // Carregar produtos e concorrentes do banco para este promotor
       if (loadEl) { loadEl.style.display='block'; loadEl.textContent='⏳ Carregando seus dados...'; }
