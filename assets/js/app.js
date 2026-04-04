@@ -1970,38 +1970,43 @@ function addConcorrente() {
   var empresa = document.getElementById('nc-empresa').value.trim();
   var similar = (document.getElementById('nc-similar') || {}).value || '';
   similar = similar.trim();
-  if (!pid)     { alert('Selecione o produto próprio.'); return; }
+  if (!pid)     { alert('Selecione o produto proprio.'); return; }
   if (!empresa) { alert('Informe a empresa concorrente.'); return; }
   if (!similar) { alert('Informe o produto similar.'); return; }
-  var lista = carregarConcorrentes();
-  lista = lista.filter(function(c){ return c.produto_id!==pid; });
-  var novoConc = { id: gerarUUID(), produto_id: pid, empresa: empresa, produto_similar: similar, promotor_id: ls('promotor-id') || '' };
-  lista.push(novoConc);
-  localStorage.setItem(concKey(), JSON.stringify(lista));
-  document.getElementById('nc-meu-produto').value='';
-  document.getElementById('nc-empresa').value='';
-  document.getElementById('nc-similar').value='';
-  renderCadastroConcorrentes();
-  recarregarProdutos();
-  // Salvar no Supabase
-  sbPost('concorrentes', {
-    id: novoConc.id,
-    produto_id: novoConc.produto_id,
-    empresa: novoConc.empresa,
-    produto_similar: novoConc.produto_similar,
-    promotor_id: ls('promotor-id') || ''
-  }).then(function(r) {
-    if (r && r.ok) {
+
+  var promotorId = ls('promotor-id') || '';
+  fetch(SUPABASE_URL + '/rest/v1/concorrentes', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({
+      id: gerarUUID(),
+      produto_id: pid,
+      empresa: empresa,
+      produto_similar: similar,
+      promotor_id: promotorId
+    })
+  })
+  .then(function(r) {
+    if (r.ok) {
+      document.getElementById('nc-meu-produto').value = '';
+      document.getElementById('nc-empresa').value = '';
+      document.getElementById('nc-similar').value = '';
       alert('✓ Similar cadastrado!');
       buscarProdutosDoBanco(function() {
         renderCadastroConcorrentes();
         renderConcorrentes();
       });
     } else {
-      alert('Erro ao salvar similar.');
+      r.text().then(function(t){ alert('Erro ao salvar similar: ' + t.slice(0,100)); });
     }
-  }).catch(function() {
-    alert('Erro de conexão.');
+  })
+  .catch(function() {
+    alert('Erro de conexao ao salvar similar.');
   });
 }
 
