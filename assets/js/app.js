@@ -584,15 +584,61 @@ function renderEstoque() {
   el.innerHTML = html;
 }
 
+// ─── CONTROLE DE DADOS NÃO SALVOS ────────────────────────────────────────────
+var estoqueAlterado = false;
+
+function marcarEstoqueAlterado() {
+  if (!estoqueAlterado) {
+    estoqueAlterado = true;
+    var banner = document.getElementById('banner-nao-salvo');
+    if (banner) banner.style.display = 'flex';
+  }
+}
+
+function marcarEstoqueSalvo() {
+  estoqueAlterado = false;
+  var banner = document.getElementById('banner-nao-salvo');
+  if (banner) banner.style.display = 'none';
+}
+
+// Aviso ao tentar fechar/sair do app com dados não salvos
+window.addEventListener('beforeunload', function(e) {
+  if (estoqueAlterado) {
+    var msg = 'Você tem dados de estoque não salvos! Clique em "Salvar estoque" antes de sair.';
+    e.preventDefault();
+    e.returnValue = msg;
+    return msg;
+  }
+});
+
+// Aviso ao trocar de aba/minimizar com dados não salvos
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden && estoqueAlterado) {
+    var banner = document.getElementById('banner-nao-salvo');
+    if (banner) {
+      banner.style.background = 'var(--red-bg)';
+      banner.style.borderColor = 'var(--red)';
+      setTimeout(function() {
+        if (banner) {
+          banner.style.background = '';
+          banner.style.borderColor = '';
+        }
+      }, 3000);
+    }
+  }
+});
+
 function onSis(pid) {
   var v = parseInt(document.getElementById('sis-'+pid).value);
   estSistema[pid] = isNaN(v)?undefined:v;
   calcDif(pid);
+  marcarEstoqueAlterado();
 }
 function onGon(pid) {
   var v = parseInt(document.getElementById('gon-'+pid).value);
   estGondola[pid] = isNaN(v)?undefined:v;
   calcDif(pid);
+  marcarEstoqueAlterado();
 }
 function calcDif(pid) {
   var el = document.getElementById('dif-'+pid);
@@ -1221,7 +1267,7 @@ function salvarEstoque() {
         };
       });
       localStorage.setItem(histKey, JSON.stringify(historico));
-      alert('✓ Estoque salvo!');
+      marcarEstoqueSalvo(); alert('✓ Estoque salvo no banco de dados!');
       atualizarHome();
       renderEstoque();
     } else {
