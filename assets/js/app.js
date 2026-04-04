@@ -1743,7 +1743,6 @@ function addProduto() {
   lojasDivs.forEach(function(d){ if(d.dataset.loja) lojasSel.push(d.dataset.loja); });
   // Lojas são opcionais — produto aparece em todas as lojas se nenhuma selecionada
   var lista = carregarProdutos();
-  if (lista.find(function(p){ return p.sku===sku; })) { alert('SKU já cadastrado.'); return; }
   var fornecedor = document.getElementById('np-fornecedor') ? document.getElementById('np-fornecedor').value.trim() : '';
   // Modo edição — atualiza produto no banco SEM verificar duplicata
   if (editandoId) {
@@ -1796,7 +1795,7 @@ function addProduto() {
   .then(function(r) { return r.json(); })
   .then(function(exist) {
     if (Array.isArray(exist) && exist.length > 0) {
-      alert('Produto com SKU ' + sku + ' ja cadastrado: ' + exist[0].nome + '. Use Editar para alterar.');
+      alert('SKU ' + sku + ' ja existe: ' + exist[0].nome + '. Use Editar para alterar.');
       return;
     }
     lista.push(novoProduto);
