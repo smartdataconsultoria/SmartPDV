@@ -51,8 +51,13 @@ function fazerLogin() {
       lss('auth-token', SUPABASE_KEY);
       lss('promotor-nome', p.nome || cpfLimpo);
       lss('promotor-id', String(p.id || ''));
-      if (p.loja && !ls('promotor-loja')) lss('promotor-loja', p.loja);
-      entrarNoApp();
+      if (p.loja) lss('promotor-loja', p.loja);
+      // Carregar produtos e concorrentes do banco para este promotor
+      if (loadEl) { loadEl.style.display='block'; loadEl.textContent='⏳ Carregando seus dados...'; }
+      carregarDadosDoBanco(p.id, function() {
+        if (loadEl) loadEl.style.display='none';
+        entrarNoApp();
+      });
     } else if (res.status === 200 && Array.isArray(dados) && dados.length === 0) {
       mostrarErroLogin('CPF ou senha incorretos.');
     } else {
@@ -77,12 +82,97 @@ function mostrarErroLogin(msg) {
   if (el) { el.textContent = msg; el.style.display = 'block'; }
 }
 
+// ─── CARREGAR DADOS DO BANCO NO LOGIN ────────────────────────────────────────
+function carregarDadosDoBanco(promotorId, callback) {
+  var sbUrl = SUPABASE_URL;
+  var sbKey = SUPABASE_KEY;
+
+  // Buscar produtos do banco
+  fetch(sbUrl + '/rest/v1/produtos?select=*&order=nome', {
+    headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(produtosBanco) {
+    if (Array.isArray(produtosBanco) && produtosBanco.length > 0) {
+      // Converter formato do banco para formato do app
+      var produtosApp = produtosBanco.map(function(p) {
+        return {
+          id:            p.id,
+          nome:          p.nome || '',
+          sku:           p.sku  || '',
+          minimo:        p.minimo || p.estoque_minimo || 0,
+          preco_sugerido: p.preco_sugerido || 0,
+          fornecedor:    p.fornecedor || '',
+          lojas:         p.lojas || []
+        };
+      });
+      localStorage.setItem(prodKey(), JSON.stringify(produtosApp));
+    }
+    // Buscar concorrentes do banco
+    return fetch(sbUrl + '/rest/v1/concorrentes?select=*', {
+      headers: { 'apikey': sbKey, 'Authorization': 'Bearer ' + sbKey }
+    });
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(concsBanco) {
+    if (Array.isArray(concsBanco) && concsBanco.length > 0) {
+      var concsApp = concsBanco.map(function(c) {
+        return {
+          id:         c.id,
+          produto_id: c.produto_id,
+          empresa:    c.empresa || '',
+          similar:    c.produto_similar || c.similar || ''
+        };
+      });
+      localStorage.setItem(concKey(), JSON.stringify(concsApp));
+    }
+    if (typeof callback === 'function') callback();
+  })
+  .catch(function(e) {
+    console.warn('Aviso: erro ao carregar dados do banco, usando dados locais.', e);
+    if (typeof callback === 'function') callback();
+  });
+}
+
+function migrarDadosAntigos() {
+  // Se o promotor tem dados na chave antiga (sem CPF), migra para a nova chave
+  var dadosAntigosProd = localStorage.getItem('cadastro-produtos');
+  var dadosAntigosConc = localStorage.getItem('cadastro-concorrentes');
+
+  if (dadosAntigosProd && !localStorage.getItem(prodKey())) {
+    localStorage.setItem(prodKey(), dadosAntigosProd);
+    localStorage.removeItem('cadastro-produtos');
+  }
+  if (dadosAntigosConc && !localStorage.getItem(concKey())) {
+    localStorage.setItem(concKey(), dadosAntigosConc);
+    localStorage.removeItem('cadastro-concorrentes');
+  }
+
+  // Migrar chaves antigas de loja (sem CPF) para novas (com CPF)
+  var cpf = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
+  var keysParaMigrar = [];
+  for (var i = 0; i < localStorage.length; i++) {
+    var k = localStorage.key(i);
+    if (k && k.startsWith('loja:') && !k.startsWith('p:')) {
+      keysParaMigrar.push(k);
+    }
+  }
+  keysParaMigrar.forEach(function(k) {
+    var novaChave = 'p:' + cpf + ':' + k;
+    if (!localStorage.getItem(novaChave)) {
+      localStorage.setItem(novaChave, localStorage.getItem(k));
+    }
+    localStorage.removeItem(k);
+  });
+}
+
 function entrarNoApp() {
   document.getElementById('sc-login').style.display = 'none';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('sc-home').classList.add('active');
   var nav = document.getElementById('main-nav');
   if (nav) nav.style.display = 'flex';
+  migrarDadosAntigos();
   initApp();
   calcMeta();
 }
@@ -1693,33 +1783,42 @@ function addProduto() {
   if (elForn) elForn.value='';
   renderCadastroProdutos();
   recarregarProdutos();
-  // Salvar no Supabase com UPSERT — se SKU já existe, atualiza
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (sbUrl && sbKey) {
-    fetch(sbUrl + '/rest/v1/produtos', {
-      method: 'POST',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        id: novoProduto.id,
-        nome: novoProduto.nome,
-        sku: novoProduto.sku,
-        minimo: novoProduto.minimo,
-        preco_sugerido: novoProduto.preco_sugerido
-      })
-    }).then(function(r) {
-      alert(r.ok ? '✓ Produto salvo no banco!' : '✓ Produto cadastrado localmente.');
-    }).catch(function() {
-      alert('✓ Cadastrado!');
-    });
-  } else {
-    alert('✓ Produto cadastrado localmente!\n\nConfigure o Supabase em ⚙️ Config para salvar no banco.');
-  }
+  // Salvar no Supabase com as credenciais fixas
+  fetch(SUPABASE_URL + '/rest/v1/produtos', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=representation'
+    },
+    body: JSON.stringify({
+      id: novoProduto.id,
+      nome: novoProduto.nome,
+      sku: novoProduto.sku,
+      minimo: novoProduto.minimo,
+      preco_sugerido: novoProduto.preco_sugerido,
+      fornecedor: novoProduto.fornecedor
+    })
+  }).then(function(r) {
+    if (r.ok) {
+      return r.json().then(function(salvo) {
+        // Atualizar id local com o id retornado pelo banco
+        if (salvo && salvo[0] && salvo[0].id) {
+          var listaAtual = carregarProdutos();
+          var idx = listaAtual.findIndex(function(x){ return x.sku === novoProduto.sku; });
+          if (idx >= 0) { listaAtual[idx].id = salvo[0].id; }
+          localStorage.setItem(prodKey(), JSON.stringify(listaAtual));
+        }
+        alert('✓ Produto salvo no banco!');
+        renderCadastroProdutos(); recarregarProdutos();
+      });
+    } else {
+      return r.text().then(function(t){ alert('✓ Cadastrado localmente. Erro banco: ' + t.slice(0,100)); });
+    }
+  }).catch(function(e) {
+    alert('✓ Cadastrado! (sem conexão com banco)');
+  });
 }
 
 function removeProduto(id) {
@@ -1733,8 +1832,8 @@ function removeProduto(id) {
   renderCadastroConcorrentes();
   recarregarProdutos();
   // Remover do Supabase pelo SKU (chave única)
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
+  var sbUrl = SUPABASE_URL;
+  var sbKey = SUPABASE_KEY;
   if (sbUrl && sbKey && produto) {
     fetch(sbUrl + '/rest/v1/produtos?sku=eq.' + encodeURIComponent(produto.sku), {
       method: 'DELETE',
@@ -1861,18 +1960,14 @@ function removeConcorrente(id) {
   localStorage.setItem(concKey(), JSON.stringify(lista));
   renderCadastroConcorrentes();
   recarregarProdutos();
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (sbUrl && sbKey) {
-    fetch(sbUrl + '/rest/v1/concorrentes?id=eq.' + encodeURIComponent(id), {
-      method: 'DELETE',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json'
-      }
-    }).catch(function(e){ console.error('Erro ao deletar concorrente:', e); });
-  }
+  fetch(SUPABASE_URL + '/rest/v1/concorrentes?id=eq.' + encodeURIComponent(id), {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    }
+  }).catch(function(e){ console.error('Erro ao deletar concorrente:', e); });
 }
 
 function renderCadastroConcorrentes() {
