@@ -249,6 +249,18 @@ window.onload = function() {
 
 // ─── DADOS DE PRODUTOS ───────────────────────────────────────────────────────
 // Chave de produtos isolada por promotor (CPF)
+// ─── GERADOR DE UUID ──────────────────────────────────────────────────────────
+function gerarUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0;
+    var v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 function prodKey() {
   var cpf = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
   return 'p:' + cpf + ':cadastro-produtos';
@@ -1356,21 +1368,22 @@ function salvarEstoque() {
     return;
   }
 
-  // Montar registros — sem produto_id para evitar FK error
+  // Montar registros com produto_id vinculado
   var registros = [];
   produtos.forEach(function(p) {
     var gon   = parseInt(estGondola[p.id]) || 0;
     var sis   = parseInt(estSistema[p.id]) || 0;
     var preco = precoProp[p.id] ? parseFloat(String(precoProp[p.id]).replace(',','.')) : null;
     registros.push({
-      promotor:        cfg.promotor || ls('promotor-nome') || '',
-      loja:            cfg.loja     || ls('promotor-loja') || '',
-      produto_nome:    p.nome,
-      sku:             p.sku,
-      qtd_sistema:     sis,
-      qtd_gondola:     gon,
+      promotor:         cfg.promotor || ls('promotor-nome') || '',
+      loja:             cfg.loja     || ls('promotor-loja') || '',
+      produto_id:       p.id || null,
+      produto_nome:     p.nome,
+      sku:              p.sku,
+      qtd_sistema:      sis,
+      qtd_gondola:      gon,
       preco_encontrado: preco,
-      preco_sugerido:  p.preco_sugerido || 0
+      preco_sugerido:   p.preco_sugerido || 0
     });
   });
 
@@ -1795,7 +1808,7 @@ function addProduto() {
     return;
   }
   var novoProduto = {
-    id: 'p'+Date.now(),
+    id: gerarUUID(),
     nome: nome, sku: sku, minimo: min,
     preco_sugerido: isNaN(preco)?0:preco,
     fornecedor: fornecedor,
@@ -1963,7 +1976,7 @@ function addConcorrente() {
   if (!similar) { alert('Informe o produto similar.'); return; }
   var lista = carregarConcorrentes();
   lista = lista.filter(function(c){ return c.produto_id!==pid; });
-  var novoConc = { id: 'c'+Date.now(), produto_id: pid, empresa: empresa, produto_similar: similar, promotor_id: ls('promotor-id') || '' };
+  var novoConc = { id: gerarUUID(), produto_id: pid, empresa: empresa, produto_similar: similar, promotor_id: ls('promotor-id') || '' };
   lista.push(novoConc);
   localStorage.setItem(concKey(), JSON.stringify(lista));
   document.getElementById('nc-meu-produto').value='';
