@@ -216,8 +216,14 @@ function carregarProdutos() { return _produtosCache; }
 function carregarConcorrentes() { return _concorrentesCache; }
 
 function getProdutos() {
-  // Retorna todos os produtos do promotor — sem filtro por loja
-  return _produtosCache.map(function(p) {
+  var lojaAtiva = ls('promotor-loja') || '';
+  // Filtrar por loja ativa — se produto tem lojas definidas, mostra só na loja certa
+  // Se produto não tem lojas definidas (array vazio), aparece em todas
+  var filtrados = _produtosCache.filter(function(p) {
+    if (!p.lojas || !p.lojas.length) return true;
+    return p.lojas.indexOf(lojaAtiva) !== -1;
+  });
+  return filtrados.map(function(p) {
     var conc = _concorrentesCache.find(function(c){ return c.produto_id === p.id; });
     return Object.assign({}, p, {
       concorrente: conc ? {nome: conc.produto_similar || conc.similar, empresa: conc.empresa} : null,
