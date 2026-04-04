@@ -53,7 +53,7 @@ function fazerLogin() {
       lss('promotor-id', String(p.id || ''));
       if (p.loja) lss('promotor-loja', p.loja);
       if (loadEl) { loadEl.style.display='block'; loadEl.textContent='⏳ Carregando seus dados...'; }
-      carregarDadosDoBanco(p.id, function() {
+      buscarProdutosDoBanco(function() {
         if (loadEl) loadEl.style.display='none';
         entrarNoApp();
       });
@@ -111,35 +111,51 @@ function mostrarLogin() {
 
 // ─── CARREGAR DADOS DO BANCO NO LOGIN ────────────────────────────────────────
 function carregarDadosDoBanco(promotorId, callback) {
-  var pid = promotorId || ls('promotor-id') || '';
-  var cpf = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
-  // Chaves com CPF explícito para garantir isolamento correto
+  var pid = String(promotorId || ls('promotor-id') || '').trim();
+  var cpf = String(ls('auth-cpf') || '').replace(/\D/g,'');
   var chProd = 'p:' + cpf + ':cadastro-produtos';
   var chConc = 'p:' + cpf + ':cadastro-concorrentes';
 
-  fetch(SUPABASE_URL + '/rest/v1/produtos?select=*&promotor_id=eq.' + pid + '&order=nome', {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  var url = SUPABASE_URL + '/rest/v1/produtos?select=id,nome,sku,minimo,preco_sugerido,fornecedor&promotor_id=eq.' + pid + '&order=nome';
+
+  fetch(url, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Accept': 'application/json'
+    }
   })
-  .then(function(r) { return r.json(); })
+  .then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
   .then(function(prods) {
     var lista = Array.isArray(prods) ? prods.map(function(p) {
-      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: p.lojas||[] };
+      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: [] };
     }) : [];
     localStorage.setItem(chProd, JSON.stringify(lista));
-    return fetch(SUPABASE_URL + '/rest/v1/concorrentes?select=*&promotor_id=eq.' + pid, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+
+    return fetch(SUPABASE_URL + '/rest/v1/concorrentes?select=id,produto_id,empresa,produto_similar&promotor_id=eq.' + pid, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Accept': 'application/json'
+      }
     });
   })
-  .then(function(r) { return r.json(); })
+  .then(function(r) {
+    if (!r.ok) throw new Error('HTTP conc ' + r.status);
+    return r.json();
+  })
   .then(function(concs) {
     var lista = Array.isArray(concs) ? concs.map(function(c) {
-      return { id: c.id, produto_id: c.produto_id, empresa: c.empresa||'', similar: c.produto_similar||c.similar||'' };
+      return { id: c.id, produto_id: c.produto_id, empresa: c.empresa||'', similar: c.produto_similar||'' };
     }) : [];
     localStorage.setItem(chConc, JSON.stringify(lista));
     if (typeof callback === 'function') callback();
   })
   .catch(function(e) {
-    console.warn('Erro ao carregar banco:', e);
+    console.error('[SmartPDV] Erro carregarDadosDoBanco:', e);
     if (typeof callback === 'function') callback();
   });
 }
@@ -192,33 +208,54 @@ function gerarUUID() {
   });
 }
 
-function carregarProdutos() {
-  var raw = localStorage.getItem('cadastro-produtos');
-  if (raw) { try { return JSON.parse(raw); } catch(e){} }
-  return [];
-}
-function carregarConcorrentes() {
-  var raw = localStorage.getItem('cadastro-concorrentes');
-  if (raw) { try { return JSON.parse(raw); } catch(e){} }
-  return [];
-}
+// ─── CACHE EM MEMÓRIA (sempre vem do banco, nunca do localStorage) ────────────
+var _produtosCache = [];
+var _concorrentesCache = [];
+
+function carregarProdutos() { return _produtosCache; }
+function carregarConcorrentes() { return _concorrentesCache; }
+
 function getProdutos() {
-  var lojaAtiva = ls('promotor-loja') || '';
-  var prods = carregarProdutos();
-  var concs = carregarConcorrentes();
-  // Filtrar apenas produtos desta loja (se produto não tem lojas = mostra em todas)
-  var filtrados = prods.filter(function(p) {
-    if (!p.lojas || !p.lojas.length) return true;
-    return p.lojas.indexOf(lojaAtiva) !== -1;
-  });
-  return filtrados.map(function(p) {
-    var conc = concs.find(function(c){ return c.produto_id === p.id; });
+  return _produtosCache.map(function(p) {
+    var conc = _concorrentesCache.find(function(c){ return c.produto_id === p.id; });
     return Object.assign({}, p, {
       concorrente: conc ? {nome: conc.produto_similar || conc.similar, empresa: conc.empresa} : null,
       sistema: {gondola: 0, deposito: 0, total: 0}
     });
   });
 }
+
+// Busca produtos e concorrentes do banco e atualiza o cache em memória
+function buscarProdutosDoBanco(callback) {
+  var pid = ls('promotor-id') || '';
+  if (!pid) { if (callback) callback(); return; }
+
+  fetch(SUPABASE_URL + '/rest/v1/produtos?select=id,nome,sku,minimo,preco_sugerido,fornecedor&promotor_id=eq.' + pid + '&order=nome', {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
+  })
+  .then(function(r) { return r.ok ? r.json() : []; })
+  .then(function(prods) {
+    _produtosCache = Array.isArray(prods) ? prods.map(function(p) {
+      return { id: p.id, nome: p.nome||'', sku: p.sku||'', minimo: p.minimo||0, preco_sugerido: p.preco_sugerido||0, fornecedor: p.fornecedor||'', lojas: [] };
+    }) : [];
+    return fetch(SUPABASE_URL + '/rest/v1/concorrentes?select=id,produto_id,empresa,produto_similar&promotor_id=eq.' + pid, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
+    });
+  })
+  .then(function(r) { return r.ok ? r.json() : []; })
+  .then(function(concs) {
+    _concorrentesCache = Array.isArray(concs) ? concs.map(function(c) {
+      return { id: c.id, produto_id: c.produto_id, empresa: c.empresa||'', similar: c.produto_similar||'' };
+    }) : [];
+    produtos = getProdutos();
+    if (callback) callback();
+  })
+  .catch(function(e) {
+    console.error('[SmartPDV] buscarProdutosDoBanco erro:', e);
+    if (callback) callback();
+  });
+}
+
 var produtos = [];
 
 // Estado da sessão
@@ -556,11 +593,18 @@ function navTo(name) {
   document.getElementById('sc-'+name).classList.add('active');
   document.getElementById('ni-'+name).classList.add('active');
   window.scrollTo(0,0);
-  // Ao entrar em Config, atualizar listas e selects
+  // Ao entrar em Config, sempre recarregar do banco
   if (name === 'config') {
-    renderCadastroProdutos();
-    renderCadastroConcorrentes();
-    renderNpLojasCheck();
+    buscarProdutosDoBanco(function() {
+      renderCadastroProdutos();
+      renderCadastroConcorrentes();
+      renderNpLojasCheck();
+    });
+  }
+  if (name === 'estoque') {
+    buscarProdutosDoBanco(function() {
+      renderEstoque();
+    });
   }
 }
 
@@ -1401,6 +1445,13 @@ function initApp() {
   var elCR=document.getElementById('cfg-realizado'); if(elCR) elCR.value=fr;
   var elCM=document.getElementById('cfg-meta');      if(elCM) elCM.value=fm;
   calcMeta();
+  // Buscar produtos do banco ao iniciar
+  buscarProdutosDoBanco(function() {
+    renderEstoque();
+    renderConcorrentes();
+    renderSelectAvaria();
+    atualizarHome();
+  });
   // Data de hoje no campo
   var hoje = new Date().toISOString().slice(0,10);
   var elData = document.getElementById('home-data-lancamento');
@@ -1717,8 +1768,19 @@ function addProduto() {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify({ id: novoProduto.id, nome: novoProduto.nome, sku: novoProduto.sku, minimo: novoProduto.minimo, preco_sugerido: novoProduto.preco_sugerido, fornecedor: novoProduto.fornecedor, promotor_id: promotorId })
     })
-    .then(function(r) { alert(r.ok ? '✓ Produto "' + novoProduto.nome + '" cadastrado!' : '✓ Salvo localmente.'); })
-    .catch(function() { alert('✓ Produto salvo!'); });
+    .then(function(r) {
+      if (r.ok) {
+        alert('✓ Produto "' + novoProduto.nome + '" cadastrado!');
+        buscarProdutosDoBanco(function() {
+          renderCadastroProdutos();
+          renderEstoque();
+          renderSelectAvaria();
+        });
+      } else {
+        r.text().then(function(t){ alert('Erro ao salvar: ' + t.slice(0,100)); });
+      }
+    })
+    .catch(function() { alert('Erro de conexão ao salvar produto.'); });
   })
   .catch(function() {
     lista.push(novoProduto);
@@ -1736,9 +1798,6 @@ function removeProduto(id) {
   localStorage.setItem(prodKey(), JSON.stringify(lista));
   var concs = carregarConcorrentes().filter(function(c){ return c.produto_id!==id; });
   localStorage.setItem(concKey(), JSON.stringify(concs));
-  renderCadastroProdutos();
-  renderCadastroConcorrentes();
-  recarregarProdutos();
   // Remover do Supabase pelo SKU (chave única)
   var sbUrl = ls('sb-url');
   var sbKey = ls('sb-key');
@@ -1858,9 +1917,17 @@ function addConcorrente() {
     produto_similar: novoConc.produto_similar,
     promotor_id: ls('promotor-id') || ''
   }).then(function(r) {
-    alert(r && r.ok ? '✓ Similar cadastrado e salvo no banco!' : '✓ Similar cadastrado localmente!');
+    if (r && r.ok) {
+      alert('✓ Similar cadastrado!');
+      buscarProdutosDoBanco(function() {
+        renderCadastroConcorrentes();
+        renderConcorrentes();
+      });
+    } else {
+      alert('Erro ao salvar similar.');
+    }
   }).catch(function() {
-    alert('✓ Similar cadastrado!');
+    alert('Erro de conexão.');
   });
 }
 
@@ -1947,15 +2014,16 @@ function sincronizarProdutos() {
 }
 
 function recarregarProdutos() {
-  produtos = getProdutos();
-  renderEstoque();
-  renderConcorrentes();
-  renderSelectAvaria();
-  renderDesempProdutos();
-  renderDesempHistorico();
-  var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
-  if(fr2||fm2) calcProjecao(fr2, fm2);
-  atualizarHome();
+  buscarProdutosDoBanco(function() {
+    renderEstoque();
+    renderConcorrentes();
+    renderSelectAvaria();
+    renderDesempProdutos();
+    renderDesempHistorico();
+    var fr2=parseFloat(ls('fat-real'))||0; var fm2=parseFloat(ls('fat-meta'))||0;
+    if(fr2||fm2) calcProjecao(fr2, fm2);
+    atualizarHome();
+  });
 }
 
 
