@@ -105,10 +105,18 @@ function mostrarLogin() {
 }
 
 function fazerLogout() {
+  // Limpar sessão mas preservar dados locais do promotor (estoque, lojas etc.)
   lss('auth-token','');
   lss('auth-cpf','');
   lss('promotor-nome','');
   lss('promotor-id','');
+  lss('promotor-loja','');
+  lss('promotor-rede','');
+  lss('promotor-cidade','');
+  // Limpar estado em memória
+  estSistema={}; estGondola={}; precoProp={}; precoConc={};
+  avarias=[]; oportunidades=[]; expoChecks=0;
+  marcarEstoqueSalvo();
   mostrarLogin();
   var em = document.getElementById('login-email');
   var se = document.getElementById('login-senha');
@@ -172,8 +180,9 @@ var produtos = [];
 
 // ─── CHAVE POR LOJA ───────────────────────────────────────────────────────────
 function lojaKey(suffix) {
+  var cpf  = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
   var loja = ls('promotor-loja') || 'default';
-  return 'loja:' + loja + ':' + suffix;
+  return 'p:' + cpf + ':loja:' + loja + ':' + suffix;
 }
 function lsLoja(suffix) {
   return localStorage.getItem(lojaKey(suffix));
