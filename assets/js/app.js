@@ -1866,31 +1866,27 @@ function addProduto() {
 }
 
 function removeProduto(id) {
-  var todos = carregarProdutos();
-  var produto = todos.find(function(p){ return p.id===id; });
-  var lista = todos.filter(function(p){ return p.id!==id; });
-  localStorage.setItem(prodKey(), JSON.stringify(lista));
-  var concs = carregarConcorrentes().filter(function(c){ return c.produto_id!==id; });
-  localStorage.setItem(concKey(), JSON.stringify(concs));
-  // Remover do Supabase pelo SKU (chave única)
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (sbUrl && sbKey && produto) {
-    fetch(sbUrl + '/rest/v1/produtos?sku=eq.' + encodeURIComponent(produto.sku), {
-      method: 'DELETE',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json'
-      }
-    }).then(function(r) {
-      if (!r.ok) console.error('Erro ao remover produto do banco');
-    }).catch(function(e){ console.error(e); });
-  }
+  if (!confirm('Remover este produto?')) return;
+  fetch(SUPABASE_URL + '/rest/v1/produtos?id=eq.' + id, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  })
+  .then(function(r) {
+    if (r.ok) {
+      buscarProdutosDoBanco(function() {
+        renderCadastroProdutos();
+        renderEstoque();
+        renderSelectAvaria();
+      });
+    } else {
+      alert('Erro ao remover produto.');
+    }
+  })
+  .catch(function() { alert('Erro de conexao.'); });
 }
 
 function renderCadastroProdutos() {
-  var lista = carregarProdutos();
+  var lista = _produtosCache; // Config mostra todos os produtos, não filtra por loja
   var el = document.getElementById('lista-produtos-cfg');
   if (!el) return;
   if (!lista.length) {
@@ -1911,11 +1907,11 @@ function renderCadastroProdutos() {
       '</div>' +
     '</div>';
   }).join('');
-  // Atualizar select do concorrente
+  // Atualizar select do concorrente — mostra TODOS os produtos (sem filtro de loja)
   var sel = document.getElementById('nc-meu-produto');
   if (sel) {
     sel.innerHTML = '<option value="">Selecione o produto</option>' +
-      lista.map(function(p){ return '<option value="'+p.id+'">'+p.nome+'</option>'; }).join('');
+      _produtosCache.map(function(p){ return '<option value="'+p.id+'">'+p.nome+'</option>'; }).join('');
   }
   renderNpLojasCheck();
 }
@@ -2011,22 +2007,22 @@ function addConcorrente() {
 }
 
 function removeConcorrente(id) {
-  var lista = carregarConcorrentes().filter(function(c){ return c.id !== id; });
-  localStorage.setItem(concKey(), JSON.stringify(lista));
-  renderCadastroConcorrentes();
-  recarregarProdutos();
-  var sbUrl = ls('sb-url');
-  var sbKey = ls('sb-key');
-  if (sbUrl && sbKey) {
-    fetch(sbUrl + '/rest/v1/concorrentes?id=eq.' + encodeURIComponent(id), {
-      method: 'DELETE',
-      headers: {
-        'apikey': sbKey,
-        'Authorization': 'Bearer ' + sbKey,
-        'Content-Type': 'application/json'
-      }
-    }).catch(function(e){ console.error('Erro ao deletar concorrente:', e); });
-  }
+  if (!confirm('Remover este similar?')) return;
+  fetch(SUPABASE_URL + '/rest/v1/concorrentes?id=eq.' + id, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  })
+  .then(function(r) {
+    if (r.ok) {
+      buscarProdutosDoBanco(function() {
+        renderCadastroConcorrentes();
+        renderConcorrentes();
+      });
+    } else {
+      alert('Erro ao remover similar.');
+    }
+  })
+  .catch(function() { alert('Erro de conexao.'); });
 }
 
 function renderCadastroConcorrentes() {
