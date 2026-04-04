@@ -1,0 +1,206 @@
+:root {
+  /* ── Smartdata — Black & Gold Elegance (DARK) ── */
+  --brand:#FCA311; --brand-dark:#D4880A; --brand-light:#3A2D00;
+  --bg:#000000; --surface:#14213D; --surface2:#1C2B4A;
+  --border:#253352; --text:#FFFFFF; --text2:#E5E5E5; --text3:#6B7A99;
+  --green:#2ECC71; --green-bg:#0D2E1A;
+  --amber:#FCA311; --amber-bg:#2E1F00;
+  --red:#FF4D6D; --red-bg:#2E0D15;
+  --blue:#4DA3FF; --blue-bg:#0D1E35;
+  --purple:#A78BFA; --purple-bg:#1A1035;
+  --radius:14px; --radius-sm:8px;
+}
+/* ── Tema claro ── */
+body.light {
+  --brand:#FCA311; --brand-dark:#D4880A; --brand-light:#FFF4DC;
+  --bg:#F5F5F5; --surface:#FFFFFF; --surface2:#F0F0F0;
+  --border:#E0E0E0; --text:#000000; --text2:#333333; --text3:#888888;
+  --green:#1A6B45; --green-bg:#E6F4ED;
+  --amber:#8C5200; --amber-bg:#FFF3E0;
+  --red:#C0002A; --red-bg:#FFE8EE;
+  --blue:#0A4FA6; --blue-bg:#E8F0FB;
+  --purple:#5B2D9E; --purple-bg:#F0EBFB;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo-text{font-size:32px;font-weight:700;letter-spacing:1px}
+.login-logo-text span{color:var(--brand)}
+.login-tagline{font-size:12px;color:var(--text3);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:100%;max-width:380px}
+.login-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--text3);margin-bottom:20px}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;letter-spacing:0.3px}
+.login-field input{width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--bg);font-family:'Syne',sans-serif;font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;transition:border-color 0.15s}
+.login-field input:focus{border-color:var(--brand)}
+.login-btn{width:100%;padding:14px;border-radius:var(--radius-sm);border:none;background:var(--brand);color:#000;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.12s;margin-top:4px}
+.login-btn:active{background:var(--brand-dark);transform:scale(0.98)}
+.login-btn:disabled{opacity:0.5;cursor:not-allowed}
+.login-error{background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--red);margin-top:12px;display:none}
+.login-footer{text-align:center;font-size:11px;color:var(--text3);margin-top:20px}
+.login-divider{height:1px;background:var(--border);margin:16px 0}
+.login-loading{display:none;text-align:center;padding:12px;font-size:13px;color:var(--text3)}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:70px;transition:background 0.3s,color 0.3s}
+
+/* HEADER */
+.header{background:var(--surface);padding:42px 18px 16px;position:relative;overflow:hidden;border-bottom:1px solid var(--border);transition:background 0.3s,border-color 0.3s}
+.header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--brand);border-radius:0}
+.logo{font-size:11px;font-weight:700;color:#FFFFFF;letter-spacing:2px;text-transform:uppercase}
+body.light .logo{color:#000000}
+body.light .logo span{color:#FCA311}
+/* TOGGLE TEMA */
+.theme-toggle{position:absolute;top:44px;right:16px;display:flex;align-items:center;gap:6px;background:var(--surface2);border:1.5px solid var(--brand);border-radius:20px;padding:5px 10px;cursor:pointer;transition:all 0.2s;z-index:10}
+.theme-toggle:active{transform:scale(0.95)}
+.toggle-track{width:34px;height:18px;border-radius:9px;background:var(--border);position:relative;transition:background 0.25s;flex-shrink:0}
+body.light .toggle-track{background:#FCA311}
+.toggle-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#FFFFFF;transition:transform 0.25s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+body.light .toggle-thumb{transform:translateX(16px);background:#000}
+.toggle-icon{font-size:13px;line-height:1}
+.toggle-lbl{font-size:10px;font-weight:700;letter-spacing:0.5px;color:var(--text2)}
+.h-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px}
+.h-title{font-size:20px;font-weight:700;color:var(--text)}
+.h-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.h-time{font-family:'DM Mono',monospace;font-size:12px;color:var(--text3)}
+.loja-pill{display:inline-flex;align-items:center;gap:5px;background:var(--brand-light);border:1px solid var(--brand);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--brand);font-weight:600;margin-top:8px}
+
+/* NAV */
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);transition:background 0.3s,border-color 0.3s}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 2px 6px;cursor:pointer;color:var(--text3);font-size:9px;font-weight:500;gap:2px;border:none;background:none}
+.ni.active{color:var(--brand)}
+.ni-icon{font-size:18px}
+
+/* SCREENS */
+.screen{display:none}
+.screen.active{display:block;animation:fi 0.15s ease}
+@keyframes fi{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+
+/* SECTION & CARD */
+.sec{padding:12px 0 2px}
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin:0 14px 10px;transition:background 0.3s,border-color 0.3s}
+.ct{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+
+/* FIELDS */
+.field{margin-bottom:10px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);font-family:'Syne',sans-serif;font-size:14px;color:var(--text);outline:none;-webkit-appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand)}
+.field textarea{resize:none;height:64px}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.b-ok{background:var(--green-bg);color:var(--green)}
+.b-warn{background:var(--amber-bg);color:var(--amber)}
+.b-danger{background:var(--red-bg);color:var(--red)}
+.b-blue{background:var(--brand-light);color:var(--brand)}
+.b-purple{background:var(--purple-bg);color:var(--purple)}
+.b-neutral{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+
+/* BTN */
+.btn{width:100%;padding:12px;border-radius:var(--radius-sm);border:none;font-family:'Syne',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.12s}
+.btn-p{background:var(--brand);color:#000000;font-weight:700}
+.btn-p:active{background:var(--brand-dark);color:#000;transform:scale(0.98)}
+.btn-o{background:transparent;color:var(--brand);border:1.5px solid var(--brand);font-weight:600}
+.btn-sm{padding:8px 14px;font-size:12px;width:auto}
+
+/* METRICS */
+.metrics{display:grid;gap:8px}
+.m2{grid-template-columns:1fr 1fr}
+.m3{grid-template-columns:repeat(3,1fr)}
+.m4{grid-template-columns:repeat(4,1fr)}
+.metric{background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center;border:1px solid var(--border)}
+.metric-n{font-size:20px;font-weight:600}
+.metric-l{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* ALERT ITEM */
+.ali{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.ali:last-child{border-bottom:none}
+.ali-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.ali-text{font-size:13px;color:var(--text);line-height:1.4}
+.ali-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* CHECK */
+.ci{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.ci:last-child{border-bottom:none}
+.cb{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.12s}
+.cb.on{background:var(--brand);border-color:var(--brand-dark)}
+.cb.on::after{content:'✓';color:#000;font-size:13px;font-weight:700}
+.ci-label{font-size:13px;color:var(--text);flex:1}
+.ci-badge{flex-shrink:0}
+
+/* PROGRESS */
+.pbar{width:100%;height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
+.pfill{height:100%;border-radius:3px;transition:width 0.4s}
+
+/* ESTOQUE ITEM */
+.ei{border:1px solid var(--border);border-radius:var(--radius);margin:0 14px 10px;background:var(--surface);overflow:hidden;transition:border-color 0.15s}
+.ei-head{display:flex;justify-content:space-between;align-items:flex-start;padding:11px 13px 8px;border-bottom:1px solid var(--border)}
+.ei-nome{font-size:13px;font-weight:600;color:var(--text)}
+.ei-sku{font-size:11px;color:var(--text3);margin-top:1px}
+.ei-cols{display:grid;grid-template-columns:1fr 1fr}
+.ei-col{padding:10px 13px}
+.ei-col:first-child{border-right:1px solid var(--border)}
+.ei-col-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:5px}
+.sys-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--brand)}
+.sys-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.fis-input{font-family:'DM Mono',monospace;font-size:22px;font-weight:600;width:100%;border:none;background:transparent;color:var(--text);outline:none;padding:0}
+.fis-input::placeholder{color:var(--text3)}
+.ei-foot{display:flex;align-items:center;padding:7px 13px;border-top:1px solid var(--border);gap:8px}
+.dif-txt{font-size:12px;font-weight:600}
+.dif-ok{color:var(--green)}.dif-warn{color:var(--amber)}.dif-danger{color:var(--red)}
+
+/* PREÇO MINI (dentro do estoque) */
+.ei-preco{display:flex;align-items:center;justify-content:space-between;padding:8px 13px;border-top:1px solid var(--border);background:var(--surface2)}
+.ei-preco-lbl{font-size:11px;color:var(--text2)}
+.preco-mini{width:90px;padding:5px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);font-family:'DM Mono',monospace;font-size:13px;text-align:right;color:var(--brand);font-weight:600;outline:none}
+.preco-mini:focus{border-color:var(--brand)}
+
+/* CONCORRENTE ITEM */
+.conc-item{border:1px solid var(--border);border-radius:var(--radius);margin:0 14px 10px;background:var(--surface);overflow:hidden}
+.conc-head{padding:10px 13px 8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.conc-nome{font-size:13px;font-weight:600;color:var(--text)}
+.conc-body{display:grid;grid-template-columns:1fr 1fr}
+.conc-col{padding:10px 13px}
+.conc-col:first-child{border-right:1px solid var(--border)}
+.conc-col-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px}
+.conc-preco-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--brand)}
+.conc-input{width:100%;border:1.5px solid var(--brand);background:var(--bg);font-family:'DM Mono',monospace;font-size:20px;font-weight:600;color:var(--text);outline:none;padding:8px 10px;border-radius:var(--radius-sm);-webkit-appearance:none;appearance:none}
+.conc-input:focus{border-color:var(--brand);background:var(--surface2)}
+.conc-input::placeholder{color:var(--text3)}
+.conc-foot{padding:7px 13px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+
+/* AVARIA ITEM */
+.av-item{border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;padding:10px 12px;background:var(--surface)}
+.av-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.av-nome{font-size:13px;font-weight:600;color:var(--text)}
+.av-remove{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0}
+
+/* DESEMPENHO */
+.meta-bar-wrap{margin:10px 0}
+.meta-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px}
+.meta-bar{width:100%;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.meta-fill{height:100%;border-radius:5px;transition:width 0.6s}
+
+/* OPORTUNIDADE CARD */
+.op-item{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;background:var(--surface);display:flex;justify-content:space-between;align-items:flex-start}
+.op-text{font-size:13px;color:var(--text);line-height:1.5;flex:1}
+.op-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.op-remove{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0;margin-left:8px}
+
+/* RESUMO CARD (tela principal) */
+.res-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin:0 14px 10px;overflow:hidden}
+.res-card-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;background:var(--surface2);border-radius:var(--radius) var(--radius) 0 0}
+.res-card-title{font-size:13px;font-weight:600;color:var(--text)}
+.res-card-body{padding:10px 14px}
+.res-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.res-row:last-child{border-bottom:none}
+
+/* INFO BOX */
+.ibox{border-radius:var(--radius-sm);padding:9px 12px;margin:0 14px 10px;font-size:12px;line-height:1.6}
+.ibox-blue{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.ibox-amber{background:var(--amber-bg);color:var(--amber)}
+
+.spacer{height:8px}
+.ph{padding:0 14px}
