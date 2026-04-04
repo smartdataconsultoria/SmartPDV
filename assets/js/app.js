@@ -214,6 +214,10 @@ function fazerLogout() {
   estSistema={}; estGondola={}; precoProp={}; precoConc={};
   avarias=[]; oportunidades=[]; expoChecks=0;
   produtos=[];
+  // Limpar loja ativa para não vazar entre promotores
+  lss('promotor-loja','');
+  lss('promotor-rede','');
+  lss('promotor-cidade','');
   marcarEstoqueSalvo();
   mostrarLogin();
   var em = document.getElementById('login-email');
@@ -458,8 +462,25 @@ tick(); setInterval(tick,30000);
 
 
 // ─── LOJAS MÚLTIPLAS ──────────────────────────────────────────────────────────
+function lojasKey() {
+  var cpf = (ls('auth-cpf') || 'anon').replace(/\D/g,'');
+  return 'p:' + cpf + ':minhas-lojas';
+}
 function carregarLojas() {
-  try { return JSON.parse(localStorage.getItem('minhas-lojas') || '[]'); } catch(e){ return []; }
+  // Tenta chave nova (isolada por promotor), senão tenta a antiga e migra
+  var chaveNova = lojasKey();
+  var dadosNovos = localStorage.getItem(chaveNova);
+  if (dadosNovos) {
+    try { return JSON.parse(dadosNovos); } catch(e){ return []; }
+  }
+  // Migrar dados antigos se existirem
+  var dadosAntigos = localStorage.getItem('minhas-lojas');
+  if (dadosAntigos) {
+    localStorage.setItem(chaveNova, dadosAntigos);
+    localStorage.removeItem('minhas-lojas');
+    try { return JSON.parse(dadosAntigos); } catch(e){ return []; }
+  }
+  return [];
 }
 
 function addLoja() {
@@ -471,7 +492,7 @@ function addLoja() {
   if (lista.length >= 5) { alert('Limite de 5 lojas atingido. Remova uma antes de adicionar.'); return; }
   if (lista.find(function(l){ return l.nome === nome; })) { alert('Loja já cadastrada.'); return; }
   lista.push({ id: 'l'+Date.now(), nome: nome, rede: rede, cidade: cidade });
-  localStorage.setItem('minhas-lojas', JSON.stringify(lista));
+  localStorage.setItem(lojasKey(), JSON.stringify(lista));
   document.getElementById('nova-loja-nome').value = '';
   document.getElementById('nova-loja-rede').value = '';
   document.getElementById('nova-loja-cidade').value = '';
@@ -488,7 +509,7 @@ function addLoja() {
 
 function removerLoja(id) {
   var lista = carregarLojas().filter(function(l){ return l.id !== id; });
-  localStorage.setItem('minhas-lojas', JSON.stringify(lista));
+  localStorage.setItem(lojasKey(), JSON.stringify(lista));
   // Se era a loja ativa, limpar
   renderLojas();
   syncLoja();
