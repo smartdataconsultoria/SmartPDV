@@ -657,9 +657,42 @@ function navTo(name) {
   }
   if (name === 'estoque') {
     buscarProdutosDoBanco(function() {
-      renderEstoque();
+      carregarUltimoEstoqueDoBanco(function() {
+        renderEstoque();
+      });
     });
   }
+}
+
+// Carrega o ultimo lancamento de estoque do banco para pre-preencher a tela
+function carregarUltimoEstoqueDoBanco(callback) {
+  var pid  = ls('promotor-id') || '';
+  var loja = ls('promotor-loja') || '';
+  if (!pid || !loja) { if (callback) callback(); return; }
+  var hoje = new Date().toISOString().slice(0, 10);
+  fetch(SUPABASE_URL + '/rest/v1/estoque?select=produto_id,produto_nome,sku,qtd_sistema,qtd_gondola,preco_encontrado,data_registro&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&order=data_registro.desc&limit=50', {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  })
+  .then(function(r) { return r.ok ? r.json() : []; })
+  .then(function(rows) {
+    if (!Array.isArray(rows) || !rows.length) { if (callback) callback(); return; }
+    var visto = {};
+    rows.forEach(function(row) {
+      var chave = row.sku || row.produto_nome;
+      if (visto[chave]) return;
+      visto[chave] = true;
+      var prod = _produtosCache.find(function(p) { return p.sku === row.sku || p.nome === row.produto_nome; });
+      if (!prod) return;
+      var dataLanc = row.data_registro ? row.data_registro.slice(0,10) : '';
+      if (dataLanc === hoje) {
+        if (row.qtd_sistema !== null && row.qtd_sistema !== undefined) estSistema[prod.id] = row.qtd_sistema;
+        if (row.qtd_gondola !== null && row.qtd_gondola !== undefined) estGondola[prod.id] = row.qtd_gondola;
+        if (row.preco_encontrado) precoProp[prod.id] = String(row.preco_encontrado);
+      }
+    });
+    if (callback) callback();
+  })
+  .catch(function() { if (callback) callback(); });
 }
 
 // ─── RENDER ESTOQUE ───────────────────────────────────────────────────────────
