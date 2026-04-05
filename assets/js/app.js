@@ -646,10 +646,27 @@ function navTo(name) {
   document.getElementById('sc-'+name).classList.add('active');
   document.getElementById('ni-'+name).classList.add('active');
   window.scrollTo(0,0);
-  // Ao entrar em Concorrentes, recarregar estoque para ter precos atuais
+  // Ao entrar em Concorrentes, recarregar estoque e verificar se ja salvou hoje
   if (name === 'concorrentes') {
     carregarUltimoEstoqueDoBanco(function() {
       renderConcorrentes();
+      // Verificar se ja tem precos de concorrentes salvos hoje
+      var pid  = ls('promotor-id') || '';
+      var loja = ls('promotor-loja') || '';
+      var hoje = new Date().toISOString().slice(0, 10);
+      if (pid && loja) {
+        fetch(SUPABASE_URL + '/rest/v1/precos_concorrentes?select=data_registro&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&order=data_registro.desc&limit=1', {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+        })
+        .then(function(r) { return r.ok ? r.json() : []; })
+        .then(function(rows) {
+          var temHoje = Array.isArray(rows) && rows.length > 0 && rows[0].data_registro && rows[0].data_registro.slice(0,10) === hoje;
+          mostrarBotoesConcorrentes(!temHoje);
+        })
+        .catch(function() { mostrarBotoesConcorrentes(true); });
+      } else {
+        mostrarBotoesConcorrentes(true);
+      }
     });
   }
   // Ao entrar em Config, sempre recarregar do banco
@@ -717,6 +734,19 @@ function carregarUltimoEstoqueDoBanco(callback) {
   .catch(function() {
     mostrarBotoesEstoque(true);
     if (callback) callback();
+  });
+}
+
+function mostrarBotoesConcorrentes(podeEditar) {
+  var avisoEl = document.getElementById('conc-ja-salvo');
+  var acoesEl = document.getElementById('conc-acoes');
+  if (avisoEl) avisoEl.style.display = podeEditar ? 'none' : 'block';
+  if (acoesEl) acoesEl.style.display = podeEditar ? 'block' : 'none';
+  // Desabilitar inputs de preço se ja salvo hoje
+  document.querySelectorAll('#lista-conc .conc-input').forEach(function(el) {
+    el.disabled = !podeEditar;
+    el.style.opacity = podeEditar ? '1' : '0.5';
+    el.style.pointerEvents = podeEditar ? 'auto' : 'none';
   });
 }
 
@@ -1705,13 +1735,22 @@ function salvarConcorrentes() {
     alert('Nenhum dado para salvar.');
     return;
   }
-  if (cfg.url && cfg.key) {
-    sbPost('precos_concorrentes', registros)
-      .then(function(r){ alert(r.ok ? '✓ Concorrentes salvos no banco!' : '✓ Salvo localmente.'); })
-      .catch(function(){ alert('✓ Salvo localmente.'); });
-  } else {
-    alert('✓ Preços registrados!\n\nConfigure o Supabase em ⚙️ Config.');
-  }
+  // Adicionar promotor_id e data nos registros
+  var promotorId = ls('promotor-id') || '';
+  registros = registros.map(function(r) {
+    return Object.assign({}, r, { promotor_id: promotorId });
+  });
+
+  sbPost('precos_concorrentes', registros)
+    .then(function(r) {
+      if (r.ok) {
+        alert('✓ Preços dos concorrentes salvos!');
+        mostrarBotoesConcorrentes(false);
+      } else {
+        r.text().then(function(t){ alert('Erro ao salvar: ' + t.slice(0,100)); });
+      }
+    })
+    .catch(function(){ alert('Erro de conexao.'); });
   atualizarHomeConc();
 }
 
