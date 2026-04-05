@@ -957,8 +957,11 @@ function prevFotoInline(input) {
 // ─── AVARIAS ──────────────────────────────────────────────────────────────────
 function renderSelectAvaria() {
   var sel = document.getElementById('av-produto');
+  if (!sel) return;
+  // Filtra pelos produtos da loja ativa (getProdutos já aplica o filtro)
+  var produtosLoja = getProdutos();
   sel.innerHTML = '<option value="">Selecione o produto</option>';
-  produtos.forEach(function(p){
+  produtosLoja.forEach(function(p){
     var opt = document.createElement('option');
     opt.value = p.id; opt.textContent = p.nome;
     sel.appendChild(opt);
