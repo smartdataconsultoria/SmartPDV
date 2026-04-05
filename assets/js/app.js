@@ -277,6 +277,9 @@ function buscarProdutosDoBanco(callback) {
     }) : [];
     _lojasCache = Array.isArray(res[2]) ? res[2] : [];
     produtos = getProdutos();
+    // Recalcular meta e home após carregar dados
+    calcMeta();
+    atualizarHome();
     if (typeof callback === 'function') callback();
   })
   .catch(function(e) {
@@ -1024,8 +1027,13 @@ function removeAvaria(i) {avarias.splice(i,1);renderAvarias();atualizarHome();}
 
 // ─── DESEMPENHO ───────────────────────────────────────────────────────────────
 function calcMeta() {
-  var real = parseFloat(document.getElementById('fat-real-input').value)||0;
-  var meta = parseFloat(document.getElementById('fat-meta-input').value)||0;
+  // Priorizar valor do campo, senão ler do localStorage da loja
+  var elR = document.getElementById('fat-real-input');
+  var elM = document.getElementById('fat-meta-input');
+  var real = parseFloat((elR && elR.value) || lsLoja('fat-real') || ls('fat-real') || '0') || 0;
+  var meta = parseFloat((elM && elM.value) || lsLoja('fat-meta') || ls('fat-meta') || '0') || 0;
+  if (elR && !elR.value && real) elR.value = real;
+  if (elM && !elM.value && meta) elM.value = meta;
   var pct  = meta > 0 ? Math.min(100, Math.round((real / meta) * 100)) : 0;
   var falta = Math.max(0, meta - real);
 
@@ -1231,7 +1239,7 @@ function atualizarHome() {
   setTxt('home-expo-txt', expoChecks+' de '+expoTotal+' itens do checklist');
   setTxt('home-op', oportunidades.length);
 
-  // Resumo estoque no home
+  // Resumo estoque no home — buscar do banco se não tiver em memória
   var estHtml = '';
   produtos.forEach(function(p){
     var g = estGondola[p.id];
@@ -1241,7 +1249,40 @@ function atualizarHome() {
     estHtml += '<div class="res-row"><span style="color:var(--text2);font-size:12px">'+p.nome+'</span>' +
       '<span class="badge '+cls+'" style="font-size:10px">'+(g!==undefined?g+' un':'—')+'</span></div>';
   });
-  if(estHtml) document.getElementById('home-est-body').innerHTML = estHtml;
+  var estBody = document.getElementById('home-est-body');
+  if (estBody) {
+    if (estHtml) {
+      estBody.innerHTML = estHtml;
+    } else {
+      // Tentar buscar último estoque do banco
+      var pid = ls('promotor-id') || '';
+      var loja = ls('promotor-loja') || '';
+      if (pid && loja) {
+        fetch(SUPABASE_URL + '/rest/v1/estoque?select=produto_nome,qtd_gondola,qtd_sistema&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&order=data_registro.desc&limit=20', {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+        })
+        .then(function(r){ return r.ok ? r.json() : []; })
+        .then(function(rows) {
+          if (!Array.isArray(rows) || !rows.length) return;
+          // Pegar último lançamento por produto
+          var vistos = {};
+          var html = '';
+          rows.forEach(function(row) {
+            if (vistos[row.produto_nome]) return;
+            vistos[row.produto_nome] = true;
+            var g = row.qtd_gondola;
+            var prod = _produtosCache.find(function(p){ return p.nome === row.produto_nome; });
+            var min = prod ? prod.minimo : 0;
+            var cls = (g < min) ? 'b-danger' : (g < min*1.2) ? 'b-warn' : 'b-ok';
+            html += '<div class="res-row"><span style="color:var(--text2);font-size:12px">' + row.produto_nome + '</span>' +
+              '<span class="badge ' + cls + '" style="font-size:10px">' + g + ' un</span></div>';
+          });
+          if (html && estBody) estBody.innerHTML = html;
+        })
+        .catch(function(){});
+      }
+    }
+  }
 
   // Avarias home
   var avHtml = '';
@@ -1363,7 +1404,8 @@ function salvarEstoque() {
       qtd_sistema:      sis,
       qtd_gondola:      gon,
       preco_encontrado: preco,
-      preco_sugerido:   p.preco_sugerido || 0
+      preco_sugerido:   p.preco_sugerido || 0,
+      promotor_id:      ls('promotor-id') || null
     });
   });
 
@@ -1493,11 +1535,12 @@ function initApp() {
   oportunidades = lsLojaObj('oportunidades') || [];
   expoChecks    = parseInt(lsLoja('expo-checks')||'0');
   // Meta
-  var fr = lsLoja('fat-real')||''; var fm = lsLoja('fat-meta')||'';
-  var elR=document.getElementById('fat-real-input'); if(elR) elR.value=fr;
-  var elM=document.getElementById('fat-meta-input'); if(elM) elM.value=fm;
-  var elCR=document.getElementById('cfg-realizado'); if(elCR) elCR.value=fr;
-  var elCM=document.getElementById('cfg-meta');      if(elCM) elCM.value=fm;
+  var fr = lsLoja('fat-real') || ls('fat-real') || '';
+  var fm = lsLoja('fat-meta') || ls('fat-meta') || '';
+  var elR=document.getElementById('fat-real-input'); if(elR && fr) elR.value=fr;
+  var elM=document.getElementById('fat-meta-input'); if(elM && fm) elM.value=fm;
+  var elCR=document.getElementById('cfg-realizado'); if(elCR && fr) elCR.value=fr;
+  var elCM=document.getElementById('cfg-meta');      if(elCM && fm) elCM.value=fm;
   calcMeta();
   // Buscar produtos do banco ao iniciar
   buscarProdutosDoBanco(function() {
@@ -1614,17 +1657,13 @@ function salvarDesempenho() {
   else { historico.push({data: dataStr, real: real, meta: meta}); }
   lssLojaObj('desemp-historico', historico);
 
-  if (cfg.url && cfg.key) {
-    sbPost('desempenho', {
-      promotor: cfg.promotor, loja: cfg.loja,
-      mes_referencia: hoje.toISOString().slice(0,7),
-      meta_mensal: meta, realizado: real
-    })
-    .then(function(r){ alert(r.ok ? '✓ Desempenho salvo no banco!' : '✓ Salvo localmente.'); })
-    .catch(function(){ alert('✓ Salvo localmente.'); });
-  } else {
-    alert('✓ Desempenho salvo!');
-  }
+  sbPost('desempenho', {
+    promotor: cfg.promotor, loja: cfg.loja,
+    mes_referencia: hoje.toISOString().slice(0,7),
+    meta_mensal: meta, realizado: real
+  })
+  .then(function(r){ alert(r.ok ? '✓ Desempenho salvo!' : '✓ Salvo localmente.'); })
+  .catch(function(){ alert('✓ Desempenho salvo!'); });
   calcMeta();
   renderDesempHistorico();
   calcProjecao(real, meta);
