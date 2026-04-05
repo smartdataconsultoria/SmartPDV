@@ -277,7 +277,16 @@
 
   <div id="lista-est"></div>
 
-  <div class="ph" style="padding-bottom:12px">
+  <!-- Aviso estoque já salvo hoje -->
+  <div id="est-ja-salvo" style="display:none;margin:0 14px 10px">
+    <div style="background:var(--green-bg);border:1.5px solid var(--green);border-radius:var(--radius-sm);padding:14px 16px;text-align:center">
+      <div style="font-size:16px;margin-bottom:6px">✅</div>
+      <div style="font-size:13px;font-weight:700;color:var(--green)">Estoque já foi salvo hoje!</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">O lançamento de hoje para esta loja já está registrado no banco.<br>Você poderá salvar novamente amanhã.</div>
+    </div>
+  </div>
+
+  <div id="est-acoes" class="ph" style="padding-bottom:12px">
     <div style="display:flex;gap:8px">
       <button class="btn btn-p" style="flex:1" onclick="salvarEstoque()">Salvar estoque & preços</button>
       <button class="btn btn-o" style="flex:1" onclick="editarLancamento()">✏️ Corrigir lançamento</button>
