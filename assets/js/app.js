@@ -646,6 +646,12 @@ function navTo(name) {
   document.getElementById('sc-'+name).classList.add('active');
   document.getElementById('ni-'+name).classList.add('active');
   window.scrollTo(0,0);
+  // Ao entrar em Concorrentes, recarregar estoque para ter precos atuais
+  if (name === 'concorrentes') {
+    carregarUltimoEstoqueDoBanco(function() {
+      renderConcorrentes();
+    });
+  }
   // Ao entrar em Config, sempre recarregar do banco
   if (name === 'config') {
     buscarProdutosDoBanco(function() {
@@ -696,10 +702,11 @@ function carregarUltimoEstoqueDoBanco(callback) {
       var prod = _produtosCache.find(function(p) { return p.sku === row.sku || p.nome === row.produto_nome; });
       if (!prod) return;
       var dataLanc = row.data_registro ? row.data_registro.slice(0,10) : '';
+      // Carregar sempre o ultimo preco, independente do dia
+      if (row.preco_encontrado) precoProp[prod.id] = parseFloat(row.preco_encontrado).toFixed(2).replace('.',',');
       if (dataLanc === hoje) {
         if (row.qtd_sistema !== null && row.qtd_sistema !== undefined) estSistema[prod.id] = row.qtd_sistema;
         if (row.qtd_gondola !== null && row.qtd_gondola !== undefined) estGondola[prod.id] = row.qtd_gondola;
-        if (row.preco_encontrado) precoProp[prod.id] = String(row.preco_encontrado);
       }
     });
 
@@ -891,12 +898,14 @@ function onPrecoP(pid) {
 // ─── RENDER CONCORRENTES ─────────────────────────────────────────────────────
 function renderConcorrentes() {
   var el = document.getElementById('lista-conc');
-  if (!produtos.length) {
-    el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Cadastre seus produtos em ⚙️ Config para ver os concorrentes.</div>';
+  // Sempre filtrar pelos produtos da loja ativa
+  var produtosLoja = getProdutos();
+  if (!produtosLoja.length) {
+    el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Nenhum produto cadastrado para esta loja.</div>';
     return;
   }
   var html = '';
-  produtos.forEach(function(p) {
+  produtosLoja.forEach(function(p) {
     var meuPreco  = precoProp[p.id] ? parseFloat(precoProp[p.id].replace(',','.')) : null;
     var concVal   = precoConc[p.id] || '';
     var concPreco = concVal ? parseFloat(concVal.replace(',','.')) : null;
