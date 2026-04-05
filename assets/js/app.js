@@ -646,27 +646,13 @@ function navTo(name) {
   document.getElementById('sc-'+name).classList.add('active');
   document.getElementById('ni-'+name).classList.add('active');
   window.scrollTo(0,0);
-  // Ao entrar em Concorrentes, recarregar estoque e verificar se ja salvou hoje
+  // Ao entrar em Concorrentes, recarregar estoque e precos do banco
   if (name === 'concorrentes') {
     carregarUltimoEstoqueDoBanco(function() {
-      renderConcorrentes();
-      // Verificar se ja tem precos de concorrentes salvos hoje
-      var pid  = ls('promotor-id') || '';
-      var loja = ls('promotor-loja') || '';
-      var hoje = new Date().toISOString().slice(0, 10);
-      if (pid && loja) {
-        fetch(SUPABASE_URL + '/rest/v1/precos_concorrentes?select=data_registro&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&order=data_registro.desc&limit=1', {
-          headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
-        })
-        .then(function(r) { return r.ok ? r.json() : []; })
-        .then(function(rows) {
-          var temHoje = Array.isArray(rows) && rows.length > 0 && rows[0].data_registro && rows[0].data_registro.slice(0,10) === hoje;
-          mostrarBotoesConcorrentes(!temHoje);
-        })
-        .catch(function() { mostrarBotoesConcorrentes(true); });
-      } else {
-        mostrarBotoesConcorrentes(true);
-      }
+      carregarPrecosConcorrentesDoBanco(function() {
+        renderConcorrentes();
+        atualizarHomeConc();
+      });
     });
   }
   // Ao entrar em Config, sempre recarregar do banco
@@ -1406,12 +1392,46 @@ function atualizarHome() {
   calcMeta();
 }
 
+function carregarPrecosConcorrentesDoBanco(callback) {
+  var pid  = ls('promotor-id') || '';
+  var loja = ls('promotor-loja') || '';
+  var hoje = new Date().toISOString().slice(0, 10);
+  if (!pid || !loja) { if (callback) callback(); return; }
+  fetch(SUPABASE_URL + '/rest/v1/precos_concorrentes?select=produto_id,produto_nome,preco_concorrente,data_registro&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&order=data_registro.desc&limit=50', {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  })
+  .then(function(r) { return r.ok ? r.json() : []; })
+  .then(function(rows) {
+    var temHoje = false;
+    var visto = {};
+    if (Array.isArray(rows)) {
+      rows.forEach(function(row) {
+        var chave = row.produto_id || row.produto_nome;
+        if (visto[chave]) return;
+        visto[chave] = true;
+        var dataLanc = row.data_registro ? row.data_registro.slice(0,10) : '';
+        if (dataLanc === hoje) {
+          temHoje = true;
+          var prod = _produtosCache.find(function(p) { return p.id === row.produto_id || p.nome === row.produto_nome; });
+          if (prod && row.preco_concorrente) {
+            precoConc[prod.id] = parseFloat(row.preco_concorrente).toFixed(2).replace('.',',');
+          }
+        }
+      });
+    }
+    mostrarBotoesConcorrentes(!temHoje);
+    if (callback) callback();
+  })
+  .catch(function() { mostrarBotoesConcorrentes(true); if (callback) callback(); });
+}
+
 function atualizarHomeConc() {
   var html = '';
-  produtos.forEach(function(p){
+  var produtosLoja = getProdutos();
+  produtosLoja.forEach(function(p){
     var conc = precoConc[p.id];
     if(!conc) return;
-    var meu = precoProp[p.id]?parseFloat(precoProp[p.id].replace(',','.')):null;
+    var meu = precoProp[p.id] ? parseFloat(String(precoProp[p.id]).replace(',','.')) : null;
     var cv = parseFloat(conc.replace(',','.'));
     var cls = 'b-neutral', txt = conc;
     if(meu&&!isNaN(cv)){
