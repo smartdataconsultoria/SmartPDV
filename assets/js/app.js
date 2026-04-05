@@ -253,6 +253,37 @@ function pgArray(val) {
   return [];
 }
 
+
+function carregarDesempenhoDoBanco(callback) {
+  var pid  = ls('promotor-id') || '';
+  var loja = ls('promotor-loja') || '';
+  if (!pid || !loja) { if (callback) callback(); return; }
+
+  var mesAtual = new Date().toISOString().slice(0, 7); // YYYY-MM
+  fetch(SUPABASE_URL + '/rest/v1/desempenho?select=meta_mensal,realizado,mes_referencia&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&mes_referencia=eq.' + mesAtual + '&order=created_at.desc&limit=1', {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  })
+  .then(function(r) { return r.ok ? r.json() : []; })
+  .then(function(rows) {
+    if (Array.isArray(rows) && rows.length > 0) {
+      var row = rows[0];
+      var meta = row.meta_mensal || 0;
+      var real = row.realizado || 0;
+      // Salvar no localStorage para uso offline
+      lss('fat-meta', meta); lssLoja('fat-meta', meta);
+      lss('fat-real', real); lssLoja('fat-real', real);
+      // Preencher campos se existirem
+      var elM = document.getElementById('fat-meta-input'); if (elM) elM.value = meta;
+      var elR = document.getElementById('fat-real-input'); if (elR) elR.value = real;
+      var elCM = document.getElementById('cfg-meta'); if (elCM) elCM.value = meta;
+      var elCR = document.getElementById('cfg-realizado'); if (elCR) elCR.value = real;
+    }
+    calcMeta();
+    if (callback) callback();
+  })
+  .catch(function() { calcMeta(); if (callback) callback(); });
+}
+
 function buscarProdutosDoBanco(callback) {
   var pid = ls('promotor-id') || '';
   if (!pid) { if (callback) callback(); return; }
@@ -278,10 +309,11 @@ function buscarProdutosDoBanco(callback) {
     _lojasCache = Array.isArray(res[2]) ? res[2] : [];
     produtos = getProdutos();
     syncLoja(); // Validar loja ativa contra lojas reais do promotor
-    // Recalcular meta e home após carregar dados
-    calcMeta();
-    atualizarHome();
-    if (typeof callback === 'function') callback();
+    // Buscar desempenho do banco e recalcular
+    carregarDesempenhoDoBanco(function() {
+      atualizarHome();
+      if (typeof callback === 'function') callback();
+    });
   })
   .catch(function(e) {
     console.error('[SmartPDV] buscarProdutosDoBanco erro:', e);
@@ -1811,9 +1843,12 @@ function salvarDesempenho() {
   lssLojaObj('desemp-historico', historico);
 
   sbPost('desempenho', {
-    promotor: cfg.promotor, loja: cfg.loja,
+    promotor: cfg.promotor,
+    loja: cfg.loja,
     mes_referencia: hoje.toISOString().slice(0,7),
-    meta_mensal: meta, realizado: real
+    meta_mensal: meta,
+    realizado: real,
+    promotor_id: ls('promotor-id') || null
   })
   .then(function(r){ alert(r.ok ? '✓ Desempenho salvo!' : '✓ Salvo localmente.'); })
   .catch(function(){ alert('✓ Desempenho salvo!'); });
