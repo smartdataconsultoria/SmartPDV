@@ -259,25 +259,46 @@ function carregarDesempenhoDoBanco(callback) {
   var loja = ls('promotor-loja') || '';
   if (!pid || !loja) { if (callback) callback(); return; }
 
-  var mesAtual = new Date().toISOString().slice(0, 7); // YYYY-MM
-  fetch(SUPABASE_URL + '/rest/v1/desempenho?select=meta_mensal,realizado,mes_referencia&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&mes_referencia=eq.' + mesAtual + '&order=created_at.desc&limit=1', {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
-  })
-  .then(function(r) { return r.ok ? r.json() : []; })
-  .then(function(rows) {
-    if (Array.isArray(rows) && rows.length > 0) {
-      var row = rows[0];
-      var meta = row.meta_mensal || 0;
-      var real = row.realizado || 0;
-      // Salvar no localStorage para uso offline
+  var mesAtual = new Date().toISOString().slice(0, 7);
+  var hoje     = new Date().toISOString().slice(0, 10);
+
+  // Buscar meta E estoque de hoje em paralelo
+  Promise.all([
+    fetch(SUPABASE_URL + '/rest/v1/desempenho?select=meta_mensal,realizado&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&mes_referencia=eq.' + mesAtual + '&order=atualizado_em.desc&limit=1', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    }).then(function(r){ return r.ok ? r.json() : []; }),
+    fetch(SUPABASE_URL + '/rest/v1/estoque?select=produto_id,produto_nome,sku,qtd_gondola,qtd_sistema,preco_encontrado&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&order=data_registro.desc&limit=50', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    }).then(function(r){ return r.ok ? r.json() : []; })
+  ])
+  .then(function(res) {
+    // 1. Meta e realizado
+    if (Array.isArray(res[0]) && res[0].length > 0) {
+      var meta = res[0][0].meta_mensal || 0;
+      var real = res[0][0].realizado   || 0;
       lss('fat-meta', meta); lssLoja('fat-meta', meta);
       lss('fat-real', real); lssLoja('fat-real', real);
-      // Preencher campos se existirem
       var elM = document.getElementById('fat-meta-input'); if (elM) elM.value = meta;
       var elR = document.getElementById('fat-real-input'); if (elR) elR.value = real;
-      var elCM = document.getElementById('cfg-meta'); if (elCM) elCM.value = meta;
-      var elCR = document.getElementById('cfg-realizado'); if (elCR) elCR.value = real;
+      var elCM = document.getElementById('cfg-meta');       if (elCM) elCM.value = meta;
+      var elCR = document.getElementById('cfg-realizado');  if (elCR) elCR.value = real;
     }
+
+    // 2. Estoque — pegar ultimo lançamento por produto
+    if (Array.isArray(res[1]) && res[1].length > 0) {
+      var visto = {};
+      res[1].forEach(function(row) {
+        var chave = row.sku || row.produto_nome;
+        if (visto[chave]) return;
+        visto[chave] = true;
+        var prod = _produtosCache.find(function(p){ return p.sku === row.sku || p.nome === row.produto_nome; });
+        if (!prod) return;
+        if (row.qtd_gondola !== null && row.qtd_gondola !== undefined) estGondola[prod.id] = row.qtd_gondola;
+        if (row.qtd_sistema !== null && row.qtd_sistema !== undefined) estSistema[prod.id] = row.qtd_sistema;
+        if (row.preco_encontrado) precoProp[prod.id] = parseFloat(row.preco_encontrado).toFixed(2).replace('.',',');
+      });
+    }
+
     calcMeta();
     if (callback) callback();
   })
