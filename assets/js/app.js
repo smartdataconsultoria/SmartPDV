@@ -1846,23 +1846,31 @@ function salvarConcorrentes() {
 
 // ─── SALVAR DESEMPENHO ────────────────────────────────────────────────────────
 function salvarDesempenho() {
-  var cfg = sbConfig();
+  var promotorId = ls('promotor-id') || '';
+  var promotorNome = ls('promotor-nome') || '';
+  var loja = ls('promotor-loja') || '';
   var real = parseFloat(document.getElementById('fat-real-input').value) || 0;
   var meta = parseFloat(document.getElementById('fat-meta-input').value) || 0;
-  if (!meta) { alert('Informe a meta do mês antes de salvar.'); return; }
+
+  if (!meta) { alert('Informe a meta do mes antes de salvar.'); return; }
+  if (!promotorId) { alert('Voce precisa estar logado para salvar.'); return; }
+  if (!loja) { alert('Selecione uma loja antes de salvar a meta.'); return; }
+
   lss('fat-real', real); lssLoja('fat-real', real);
   lss('fat-meta', meta); lssLoja('fat-meta', meta);
 
-  // Gravar no histórico local
-  var historico = lsLojaObj('desemp-historico') || [];
   var hoje = new Date();
+  var mesRef = hoje.toISOString().slice(0,7);
+
+  // Historico local
+  var historico = lsLojaObj('desemp-historico') || [];
   var dataStr = hoje.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
-  // Atualizar entrada do dia ou adicionar nova
   var idx = historico.findIndex(function(h){ return h.data === dataStr; });
   if (idx >= 0) { historico[idx] = {data: dataStr, real: real, meta: meta}; }
   else { historico.push({data: dataStr, real: real, meta: meta}); }
   lssLojaObj('desemp-historico', historico);
 
+  // UPSERT — POST com merge-duplicates (requer constraint única)
   fetch(SUPABASE_URL + '/rest/v1/desempenho', {
     method: 'POST',
     headers: {
@@ -1872,22 +1880,29 @@ function salvarDesempenho() {
       'Prefer': 'resolution=merge-duplicates,return=minimal'
     },
     body: JSON.stringify({
-      promotor: cfg.promotor,
-      loja: cfg.loja,
-      mes_referencia: hoje.toISOString().slice(0,7),
+      promotor: promotorNome,
+      loja: loja,
+      mes_referencia: mesRef,
       meta_mensal: meta,
       realizado: real,
-      promotor_id: ls('promotor-id') || null
+      promotor_id: promotorId
     })
   })
   .then(function(r) {
     if (r.ok) {
-      alert('✓ Desempenho salvo!');
+      alert('✓ Meta salva!');
+      calcMeta();
+      renderDesempHistorico();
     } else {
-      r.text().then(function(t){ alert('Erro ao salvar: ' + t.slice(0,100)); });
+      return r.text().then(function(t) {
+        alert('Erro ao salvar: ' + t.slice(0,150));
+      });
     }
   })
-  .catch(function(){ alert('Erro de conexao ao salvar desempenho.'); });
+  .catch(function(e) {
+    alert('Erro de conexao: ' + e);
+  });
+
   calcMeta();
   renderDesempHistorico();
   calcProjecao(real, meta);
