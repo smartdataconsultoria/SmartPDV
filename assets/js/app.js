@@ -51,7 +51,7 @@ function fazerLogin() {
       lss('auth-token', SUPABASE_KEY);
       lss('promotor-nome', p.nome || cpfLimpo);
       lss('promotor-id', String(p.id || ''));
-      if (p.loja) lss('promotor-loja', p.loja);
+      // Nao sobrescrever loja ativa com campo legado da tabela promotores
       if (loadEl) { loadEl.style.display='block'; loadEl.textContent='⏳ Carregando seus dados...'; }
       buscarProdutosDoBanco(function() {
         if (loadEl) loadEl.style.display='none';
@@ -277,6 +277,7 @@ function buscarProdutosDoBanco(callback) {
     }) : [];
     _lojasCache = Array.isArray(res[2]) ? res[2] : [];
     produtos = getProdutos();
+    syncLoja(); // Validar loja ativa contra lojas reais do promotor
     // Recalcular meta e home após carregar dados
     calcMeta();
     atualizarHome();
@@ -624,9 +625,25 @@ function fecharSeletorLoja() {
 
 // ─── LOJA ────────────────────────────────────────────────────────────────────
 function syncLoja() {
-  var lista = carregarLojas();
+  var lista = carregarLojas(); // _lojasCache — vem do banco
   var l = ls('promotor-loja') || '';
-  if (!l && lista.length) { l = lista[0].nome; lss('promotor-loja', l); }
+
+  // Validar se a loja ativa ainda existe nas lojas do promotor
+  if (l && lista.length > 0) {
+    var existe = lista.find(function(lj){ return lj.nome === l; });
+    if (!existe) {
+      // Loja ativa nao existe mais — limpar e nao selecionar automaticamente
+      l = '';
+      lss('promotor-loja', '');
+    }
+  }
+
+  // Se nao tem loja ativa e so tem uma loja cadastrada, ativar automaticamente
+  if (!l && lista.length === 1) {
+    l = lista[0].nome;
+    lss('promotor-loja', l);
+  }
+
   var display = l || 'Selecionar loja ▾';
   ['loja-header','loja-est','loja-exp','loja-conc','loja-av','loja-desemp','loja-op'].forEach(function(id){setTxt(id,display);});
   var nome = ls('promotor-nome')||'';
