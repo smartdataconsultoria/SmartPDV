@@ -756,7 +756,7 @@ function carregarUltimoEstoqueDoBanco(callback) {
   .then(function(r) { return r.ok ? r.json() : []; })
   .then(function(rows) {
     if (!Array.isArray(rows) || !rows.length) {
-      mostrarBotoesEstoque(false);
+      mostrarBotoesEstoque(true); // Sem registros = pode editar
       if (callback) callback();
       return;
     }
@@ -1863,16 +1863,31 @@ function salvarDesempenho() {
   else { historico.push({data: dataStr, real: real, meta: meta}); }
   lssLojaObj('desemp-historico', historico);
 
-  sbPost('desempenho', {
-    promotor: cfg.promotor,
-    loja: cfg.loja,
-    mes_referencia: hoje.toISOString().slice(0,7),
-    meta_mensal: meta,
-    realizado: real,
-    promotor_id: ls('promotor-id') || null
+  fetch(SUPABASE_URL + '/rest/v1/desempenho', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify({
+      promotor: cfg.promotor,
+      loja: cfg.loja,
+      mes_referencia: hoje.toISOString().slice(0,7),
+      meta_mensal: meta,
+      realizado: real,
+      promotor_id: ls('promotor-id') || null
+    })
   })
-  .then(function(r){ alert(r.ok ? '✓ Desempenho salvo!' : '✓ Salvo localmente.'); })
-  .catch(function(){ alert('✓ Desempenho salvo!'); });
+  .then(function(r) {
+    if (r.ok) {
+      alert('✓ Desempenho salvo!');
+    } else {
+      r.text().then(function(t){ alert('Erro ao salvar: ' + t.slice(0,100)); });
+    }
+  })
+  .catch(function(){ alert('Erro de conexao ao salvar desempenho.'); });
   calcMeta();
   renderDesempHistorico();
   calcProjecao(real, meta);
@@ -1930,7 +1945,7 @@ function salvarDataLancamento(val) {
   var loja  = ls('promotor-loja') || '';
   var token = ls('auth-token') || SUPABASE_KEY;
 
-  fetch(SUPABASE_URL + '/rest/v1/estoque?select=sku,qtd_sistema,qtd_gondola,preco_encontrado&loja=eq.' + encodeURIComponent(loja) + '&data_registro=gte.' + val + 'T00:00:00.000Z&data_registro=lte.' + val + 'T23:59:59.999Z&order=data_registro.desc', {
+  fetch(SUPABASE_URL + '/rest/v1/estoque?select=sku,qtd_sistema,qtd_gondola,preco_encontrado&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&data_registro=gte.' + val + 'T00:00:00.000Z&data_registro=lte.' + val + 'T23:59:59.999Z&order=data_registro.desc', {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
   })
   .then(function(r) { return r.json(); })
