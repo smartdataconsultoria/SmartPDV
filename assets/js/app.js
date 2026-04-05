@@ -670,12 +670,24 @@ function carregarUltimoEstoqueDoBanco(callback) {
   var loja = ls('promotor-loja') || '';
   if (!pid || !loja) { if (callback) callback(); return; }
   var hoje = new Date().toISOString().slice(0, 10);
+
   fetch(SUPABASE_URL + '/rest/v1/estoque?select=produto_id,produto_nome,sku,qtd_sistema,qtd_gondola,preco_encontrado,data_registro&promotor_id=eq.' + pid + '&loja=eq.' + encodeURIComponent(loja) + '&order=data_registro.desc&limit=50', {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
   })
   .then(function(r) { return r.ok ? r.json() : []; })
   .then(function(rows) {
-    if (!Array.isArray(rows) || !rows.length) { if (callback) callback(); return; }
+    if (!Array.isArray(rows) || !rows.length) {
+      mostrarBotoesEstoque(false);
+      if (callback) callback();
+      return;
+    }
+
+    // Verificar se ja tem lancamento de hoje
+    var temHoje = rows.some(function(row) {
+      return row.data_registro && row.data_registro.slice(0,10) === hoje;
+    });
+
+    // Pre-preencher campos com ultimo lancamento
     var visto = {};
     rows.forEach(function(row) {
       var chave = row.sku || row.produto_nome;
@@ -690,9 +702,30 @@ function carregarUltimoEstoqueDoBanco(callback) {
         if (row.preco_encontrado) precoProp[prod.id] = String(row.preco_encontrado);
       }
     });
+
+    // Mostrar ou esconder botoes conforme ja salvo hoje
+    mostrarBotoesEstoque(!temHoje);
     if (callback) callback();
   })
-  .catch(function() { if (callback) callback(); });
+  .catch(function() {
+    mostrarBotoesEstoque(true);
+    if (callback) callback();
+  });
+}
+
+function mostrarBotoesEstoque(podeEditar) {
+  var avisoEl  = document.getElementById('est-ja-salvo');
+  var acoesEl  = document.getElementById('est-acoes');
+  var bannerEl = document.getElementById('banner-nao-salvo');
+  if (avisoEl)  avisoEl.style.display  = podeEditar ? 'none' : 'block';
+  if (acoesEl)  acoesEl.style.display  = podeEditar ? 'block' : 'none';
+  if (bannerEl && !podeEditar) bannerEl.style.display = 'none';
+  // Desabilitar inputs se ja salvo hoje
+  document.querySelectorAll('#lista-est input, #lista-est .fis-input, #lista-est .preco-mini').forEach(function(el) {
+    el.disabled = !podeEditar;
+    el.style.opacity = podeEditar ? '1' : '0.5';
+    el.style.pointerEvents = podeEditar ? 'auto' : 'none';
+  });
 }
 
 // ─── RENDER ESTOQUE ───────────────────────────────────────────────────────────
@@ -1471,7 +1504,9 @@ function salvarEstoque() {
         };
       });
       localStorage.setItem(histKey, JSON.stringify(historico));
-      marcarEstoqueSalvo(); alert('✓ Estoque salvo no banco!');
+      marcarEstoqueSalvo();
+      mostrarBotoesEstoque(false);
+      alert('✓ Estoque salvo no banco!');
       atualizarHome();
       renderEstoque();
     } else {
